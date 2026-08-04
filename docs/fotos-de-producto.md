@@ -3,13 +3,15 @@
 Coloca aqui las fotos del catalogo. **El nombre del archivo debe coincidir
 exactamente con el `slug` definido en `src/data/products.ts`:**
 
-| Archivo esperado             | Producto                  |
-| ---------------------------- | ------------------------- |
-| `nintendo-switch-2.webp`     | Nintendo Switch 2         |
-| `macbook-air-2020.webp`      | MacBook Air 2020          |
-| `lenovo-thinkpad.webp`       | Lenovo ThinkPad           |
-| `lavadora-samsung.webp`      | Lavadora Samsung 19 kg    |
-| `pantalla-samsung-55.webp`   | Samsung Crystal UHD 55"   |
+| Archivo esperado           | Producto             |
+| --------------------------- | --------------------- |
+| `nintendo-switch-2.webp`   | Nintendo Switch 2     |
+| `macbook-air-2022.webp`    | MacBook Air 2022      |
+| `lenovo-thinkpad.webp`     | Lenovo ThinkPad       |
+| `lavadora-samsung.webp`    | Lavadora Samsung 19 kg |
+| `lg-oled-tv.webp`          | LG OLED Smart TV      |
+
+Ya estan cargadas y optimizadas (redimensionadas y convertidas a webp).
 
 ## Recomendaciones
 

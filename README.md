@@ -82,13 +82,13 @@ se convierte automaticamente en una ruta (`src/pages/empresas.astro` →
 
 ### Fotos de producto (pendiente)
 
-Faltan las fotos reales. Van en `public/products/` con el nombre exacto del
-`slug` de cada producto. Ver [`docs/fotos-de-producto.md`](docs/fotos-de-producto.md)
-para la lista de archivos y las especificaciones recomendadas.
+Las fotos ya estan cargadas en `public/products/` (convertidas a `.webp` y
+optimizadas). Si necesitas reemplazar alguna, el nombre del archivo debe
+coincidir exactamente con el `slug` de `src/data/products.ts` — ver
+[`docs/fotos-de-producto.md`](docs/fotos-de-producto.md).
 
-Mientras no existan, cada tarjeta muestra el degradado de marca con el nombre
-del producto encima. **La pagina no se rompe**, pero conviene ponerlas antes de
-gastar en publicidad.
+Si algun dia falta un archivo, esa tarjeta cae al degradado de marca con el
+nombre del producto en vez de romperse.
 
 ### Precios y catalogo
 
@@ -101,24 +101,29 @@ constante `LOYALTY_DISCOUNT` de `Catalog.astro`.
 
 ---
 
-## Conectar Supabase (formulario de leads)
+## Supabase (formulario de leads)
 
-Sin esto el formulario valida pero no guarda nada, y le muestra al usuario un
-correo de contacto en vez de fallar en silencio.
+Ya esta conectado al proyecto **Lendix** (`yfcyteskghxzmvnsagrt`) y la tabla
+`waitlist_lead` esta creada — la migracion
+[`0001_waitlist_lead.sql`](supabase/migrations/0001_waitlist_lead.sql) ya se
+aplico con `supabase db push`. El formulario de la landing guarda ahi cada
+lead en tiempo real; se probo de punta a punta (insert, RLS, duplicados).
 
-**1. Crear la tabla.** En el dashboard de Supabase, SQL Editor, pega y ejecuta
-[`supabase/migrations/0001_waitlist_lead.sql`](supabase/migrations/0001_waitlist_lead.sql).
+Para desarrollar en otra maquina, copia `.env.example` a `.env` con esas
+mismas credenciales (Project Settings → API en el dashboard de Supabase).
+Sin ese archivo el formulario valida pero no guarda nada, y le muestra al
+usuario un correo de contacto en vez de fallar en silencio.
 
-**2. Copiar las credenciales.** Project Settings → API:
+**En Vercel**, agrega `PUBLIC_SUPABASE_URL` y `PUBLIC_SUPABASE_ANON_KEY` en
+Settings → Environment Variables antes del primer deploy.
+
+Si cambia el esquema de la tabla, agrega un archivo nuevo en
+`supabase/migrations/` y aplica con:
 
 ```bash
-cp .env.example .env
+supabase link --project-ref yfcyteskghxzmvnsagrt
+supabase db push
 ```
-
-Rellena `PUBLIC_SUPABASE_URL` y `PUBLIC_SUPABASE_ANON_KEY`.
-
-**3. En Vercel**, agrega esas dos variables en Settings → Environment
-Variables y vuelve a desplegar.
 
 ### Sobre la seguridad
 
