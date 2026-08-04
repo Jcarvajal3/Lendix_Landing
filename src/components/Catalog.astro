@@ -1,0 +1,186 @@
+---
+import ProductImage from './ProductImage.astro';
+import { products } from '../data/products';
+
+// Plan libre = precio base. Plan 12 meses = 20% menos por comprometerte.
+const LOYALTY_DISCOUNT = 0.2;
+const priceFor = (monthly: number, plan: 'libre' | 'anual') =>
+  plan === 'libre' ? monthly : Math.round(monthly * (1 - LOYALTY_DISCOUNT));
+---
+
+<section id="catalogo" class="scroll-mt-24 bg-white py-20 sm:py-28">
+  <div class="container-x">
+    <div class="reveal flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+      <div class="max-w-2xl">
+        <p class="eyebrow">Catalogo de lanzamiento</p>
+        <h2 class="mt-5 text-3xl leading-[1.12] font-bold sm:text-5xl">
+          Esto es lo que puedes tener <span class="text-flame-500">este mes</span>.
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-ink-soft">
+          Compara la renta mensual con lo que costaria comprarlo de contado. La diferencia se
+          queda en tu bolsillo.
+        </p>
+      </div>
+
+      <!-- Selector de plan -->
+      <div class="shrink-0">
+        <p class="mb-2.5 text-sm font-medium text-slate-muted">Elige tu plan</p>
+        <div
+          class="inline-flex rounded-full border border-hairline bg-cream p-1"
+          role="group"
+          aria-label="Selector de plan de renta"
+        >
+          <button
+            type="button"
+            data-plan="libre"
+            aria-pressed="true"
+            class="rounded-full px-5 py-2.5 text-sm font-semibold transition-all data-[active]:bg-white data-[active]:text-ink data-[active]:shadow-sm text-ink-soft"
+            data-active
+          >
+            Plan libre
+          </button>
+          <button
+            type="button"
+            data-plan="anual"
+            aria-pressed="false"
+            class="rounded-full px-5 py-2.5 text-sm font-semibold transition-all data-[active]:bg-white data-[active]:text-ink data-[active]:shadow-sm text-ink-soft"
+          >
+            12 meses
+            <span class="ml-1.5 rounded-full bg-sun-300 px-2 py-0.5 text-[0.7rem] font-bold text-ink">-20%</span>
+          </button>
+        </div>
+        <p class="mt-2.5 max-w-[19rem] text-[0.8rem] leading-relaxed text-slate-muted" data-plan-hint>
+          Devuelves cuando quieras, sin penalidad.
+        </p>
+      </div>
+    </div>
+
+    <!-- Grid de productos -->
+    <div class="reveal mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        products.map((p) => (
+          <article class="group flex flex-col overflow-hidden rounded-3xl border border-hairline bg-white transition-all hover:border-flame-200 hover:shadow-2xl hover:shadow-ink/6">
+            <div class="relative">
+              <ProductImage slug={p.slug} name={p.name} class="aspect-4/3" />
+              {p.badge && (
+                <span class="absolute top-4 left-4 z-20 rounded-full bg-ink px-3 py-1.5 text-[0.7rem] font-semibold tracking-wide text-white uppercase">
+                  {p.badge}
+                </span>
+              )}
+            </div>
+
+            <div class="flex flex-1 flex-col p-6">
+              <p class="text-xs font-semibold tracking-widest text-slate-muted uppercase">{p.category}</p>
+              <h3 class="mt-1.5 font-display text-xl font-bold">{p.name}</h3>
+              <p class="mt-2 text-[0.925rem] leading-relaxed text-ink-soft">{p.blurb}</p>
+
+              <ul class="mt-4 flex flex-wrap gap-1.5">
+                {p.specs.map((spec) => (
+                  <li class="rounded-full bg-cream px-2.5 py-1 text-[0.75rem] font-medium text-ink-soft">{spec}</li>
+                ))}
+              </ul>
+
+              <div class="mt-auto pt-6">
+                <div class="flex items-end justify-between gap-3 border-t border-hairline pt-5">
+                  <div>
+                    <p class="text-[0.8rem] text-slate-muted">Renta mensual</p>
+                    <p class="font-display text-3xl font-bold text-ink">
+                      $<span data-price data-libre={p.monthly} data-anual={priceFor(p.monthly, 'anual')}>{p.monthly}</span><span class="text-base font-semibold text-slate-muted">/mes</span>
+                    </p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-[0.8rem] text-slate-muted">Comprarlo</p>
+                    <p class="font-display text-base font-semibold text-slate-muted line-through">${p.retail}</p>
+                  </div>
+                </div>
+
+                <a
+                  href="#lista-de-espera"
+                  data-product-cta={p.name}
+                  class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-3.5 text-sm font-semibold text-white transition-all hover:bg-flame-500 active:scale-[0.98]"
+                >
+                  Lo quiero
+                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path
+                      d="M4 10h11m0 0-4-4m4 4-4 4"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </article>
+        ))
+      }
+
+      <!-- Tarjeta "pide otro producto" -->
+      <article
+        class="flex flex-col justify-between rounded-3xl border border-dashed border-flame-300 bg-flame-50 p-7 sm:col-span-2 lg:col-span-1"
+      >
+        <div>
+          <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">✨</span>
+          <h3 class="mt-5 font-display text-xl font-bold">No esta lo que buscas?</h3>
+          <p class="mt-2.5 text-[0.95rem] leading-relaxed text-ink-soft">
+            Este es solo el catalogo de lanzamiento. Dinos que producto quieres rentar y lo
+            sumamos a la lista: los mas pedidos entran primero.
+          </p>
+        </div>
+        <a
+          href="#lista-de-espera"
+          class="mt-7 inline-flex items-center justify-center gap-2 rounded-full border border-ink/12 bg-white px-5 py-3.5 text-sm font-semibold text-ink transition-all hover:border-flame-400 hover:text-flame-600"
+        >
+          Pedir un producto
+        </a>
+      </article>
+    </div>
+
+    <p class="reveal mt-8 text-center text-sm text-slate-muted">
+      Precios en USD, referenciales para el lanzamiento. El monto final se confirma al aprobar tu solicitud.
+    </p>
+  </div>
+</section>
+
+<script is:inline>
+  (function () {
+    const buttons = document.querySelectorAll('[data-plan]');
+    const prices = document.querySelectorAll('[data-price]');
+    const hint = document.querySelector('[data-plan-hint]');
+    if (!buttons.length) return;
+
+    const hints = {
+      libre: 'Devuelves cuando quieras, sin penalidad.',
+      anual: 'Te comprometes 12 meses y pagas 20% menos cada mes.',
+    };
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const plan = btn.getAttribute('data-plan');
+
+        buttons.forEach((other) => {
+          const active = other === btn;
+          other.toggleAttribute('data-active', active);
+          other.setAttribute('aria-pressed', String(active));
+        });
+
+        prices.forEach((el) => {
+          const value = el.getAttribute('data-' + plan);
+          if (value) el.textContent = value;
+        });
+
+        if (hint) hint.textContent = hints[plan];
+      });
+    });
+
+    // Preselecciona el producto en el formulario de lista de espera.
+    document.querySelectorAll('[data-product-cta]').forEach((cta) => {
+      cta.addEventListener('click', () => {
+        const select = document.querySelector('#lead-producto');
+        const name = cta.getAttribute('data-product-cta');
+        if (select && name) select.value = name;
+      });
+    });
+  })();
+</script>

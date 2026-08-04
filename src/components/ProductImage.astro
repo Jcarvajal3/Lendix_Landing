@@ -1,0 +1,42 @@
+---
+/**
+ * Imagen de producto con degradado de marca de fondo.
+ *
+ * Las fotos aun no existen: se esperan en `public/products/<slug>.webp`.
+ * Mientras no esten, el <img> falla en silencio y queda visible el fondo de
+ * marca con el nombre del producto, en vez de un icono de imagen rota.
+ */
+interface Props {
+  slug: string;
+  name: string;
+  class?: string;
+  loading?: 'lazy' | 'eager';
+  sizes?: string;
+}
+
+const { slug, name, class: className = '', loading = 'lazy', sizes = '(min-width: 1024px) 22rem, 90vw' } = Astro.props;
+---
+
+<div class={`relative isolate overflow-hidden bg-cream ${className}`}>
+  <!-- Halo de marca de fondo -->
+  <div
+    class="pointer-events-none absolute -bottom-1/3 -left-1/4 h-[130%] w-[130%] rounded-full opacity-70 blur-2xl brand-gradient"
+    aria-hidden="true"
+  >
+  </div>
+
+  <!-- Marca de agua: visible solo mientras no haya foto -->
+  <div class="absolute inset-0 flex items-center justify-center p-6 text-center" aria-hidden="true">
+    <span class="font-display text-sm font-semibold tracking-wide text-ink/45">{name}</span>
+  </div>
+
+  <img
+    src={`/products/${slug}.webp`}
+    alt={name}
+    loading={loading}
+    decoding="async"
+    sizes={sizes}
+    class="relative z-10 h-full w-full object-contain p-6 transition-transform duration-500 will-change-transform group-hover:scale-[1.04]"
+    onerror="this.style.display='none'"
+  />
+</div>

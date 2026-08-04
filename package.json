@@ -1,0 +1,20 @@
+{
+  "name": "lendix-landing",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.1.1",
+    "@fontsource-variable/space-grotesk": "^5.1.1",
+    "@tailwindcss/vite": "^4.0.0",
+    "astro": "^5.2.0",
+    "tailwindcss": "^4.0.0"
+  }
+}

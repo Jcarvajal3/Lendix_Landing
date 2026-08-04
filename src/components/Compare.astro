@@ -1,0 +1,104 @@
+---
+const rows = [
+  {
+    topic: 'Lo que pagas hoy',
+    buy: '$749 de una sola vez',
+    lendix: '$45 y ya lo tienes en casa',
+  },
+  {
+    topic: 'Si se dana',
+    buy: 'Lo pagas tu, o peleas la garantia',
+    lendix: 'Lo reparamos o lo reemplazamos',
+  },
+  {
+    topic: 'Si sale un modelo mejor',
+    buy: 'Te quedaste con el viejo',
+    lendix: 'Cambias de equipo',
+  },
+  {
+    topic: 'Si ya no lo necesitas',
+    buy: 'Lo revendes por la mitad',
+    lendix: 'Lo devuelves y dejas de pagar',
+  },
+  {
+    topic: 'Si te lo roban',
+    buy: 'Perdiste tu dinero',
+    lendix: 'Estas cubierto',
+  },
+  {
+    topic: 'Tu compromiso',
+    buy: 'Cuotas fijas hasta terminar de pagar',
+    lendix: 'Mes a mes, lo decides tu',
+  },
+];
+---
+
+<section id="comparativa" class="scroll-mt-24 bg-cream py-20 sm:py-28">
+  <div class="container-x">
+    <div class="reveal mx-auto max-w-3xl text-center">
+      <p class="eyebrow">Rentar vs comprar</p>
+      <h2 class="mt-5 text-3xl leading-[1.12] font-bold sm:text-5xl">
+        Comprar te amarra.
+        <br class="hidden sm:block" />
+        <span class="text-flame-500">Rentar te deja salir.</span>
+      </h2>
+      <p class="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-ink-soft">
+        Usemos de ejemplo un MacBook Air. Mismo equipo, dos formas muy distintas de tenerlo.
+      </p>
+    </div>
+
+    <div class="reveal mt-14 overflow-hidden rounded-4xl border border-hairline bg-white shadow-xl shadow-ink/5">
+      <!-- Encabezado -->
+      <div class="grid grid-cols-[1fr_1fr] gap-px bg-hairline sm:grid-cols-[1.1fr_1fr_1fr]">
+        <div class="hidden bg-white p-5 sm:block"></div>
+        <div class="bg-white p-5 text-center sm:p-6">
+          <p class="font-display text-base font-bold text-slate-muted sm:text-lg">Comprarlo</p>
+          <p class="mt-1 text-sm text-slate-muted">$749 de contado</p>
+        </div>
+        <div class="bg-flame-50 p-5 text-center sm:p-6">
+          <p class="font-display text-base font-bold text-flame-700 sm:text-lg">Con Lendix</p>
+          <p class="mt-1 text-sm text-flame-600">$45 al mes</p>
+        </div>
+      </div>
+
+      <!-- Filas -->
+      <div class="divide-y divide-hairline">
+        {
+          rows.map((row) => (
+            <div class="grid grid-cols-[1fr_1fr] sm:grid-cols-[1.1fr_1fr_1fr]">
+              <p class="col-span-2 bg-cream/50 px-5 pt-4 pb-2 text-sm font-semibold text-ink sm:col-span-1 sm:bg-transparent sm:px-6 sm:py-5 sm:text-[0.95rem]">
+                {row.topic}
+              </p>
+
+              <div class="flex items-start gap-2.5 px-5 py-4 sm:px-6 sm:py-5">
+                <svg class="mt-0.5 h-4.5 w-4.5 shrink-0 text-slate-muted" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <circle cx="10" cy="10" r="9" fill="currentColor" opacity="0.12" />
+                  <path d="m7 7 6 6M13 7l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+                <span class="text-[0.9rem] leading-relaxed text-slate-muted">{row.buy}</span>
+              </div>
+
+              <div class="flex items-start gap-2.5 bg-flame-50/60 px-5 py-4 sm:px-6 sm:py-5">
+                <svg class="mt-0.5 h-4.5 w-4.5 shrink-0 text-flame-500" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <circle cx="10" cy="10" r="9" fill="currentColor" opacity="0.16" />
+                  <path
+                    d="m6 10.3 2.6 2.6L14 7.5"
+                    stroke="currentColor"
+                    stroke-width="1.9"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <span class="text-[0.9rem] leading-relaxed font-medium text-ink">{row.lendix}</span>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <p class="reveal mt-8 text-center text-sm text-slate-muted">
+      Rentar no siempre es mas barato a largo plazo. Es mas flexible, y no te descapitaliza hoy.
+    </p>
+  </div>
+</section>

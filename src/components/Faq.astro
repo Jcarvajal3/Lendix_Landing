@@ -1,0 +1,104 @@
+---
+const faqs = [
+  {
+    q: 'Entonces el producto nunca es mio?',
+    a: 'Correcto. El producto sigue siendo de Lendix; tu pagas por usarlo. Es igual que alquilar un apartamento: vives ahi y lo usas todos los dias, pero no eres el dueno. A cambio, no tienes que pagar cientos de dolares de golpe y puedes salirte cuando quieras.',
+  },
+  {
+    q: 'Puedo devolverlo de verdad cuando quiera?',
+    a: 'Si. En el plan libre nos avisas, coordinamos la recogida y dejas de pagar el siguiente mes. No hay penalidad por terminar. Si elegiste el plan de 12 meses pagas menos cada mes, pero ahi si te comprometes a ese periodo.',
+  },
+  {
+    q: 'Que pasa si el producto se dana?',
+    a: 'Si es una falla por uso normal, lo reparamos o te lo reemplazamos sin costo. Si el dano fue por mal uso o negligencia (se cayo, se mojo, lo abrieron), aplica un cargo que te explicamos claramente antes de firmar. Nunca te vamos a cobrar algo que no supieras de antemano.',
+  },
+  {
+    q: 'Y si me lo roban?',
+    a: 'Estas cubierto. Presentas la denuncia, la revisamos y no quedas debiendo el equipo. Es una de las razones por las que rentar tranquiliza mas que comprar.',
+  },
+  {
+    q: 'Necesito tarjeta de credito?',
+    a: 'No. La idea de Lendix es justamente que no dependa de un cupo de tarjeta ni de un banco. Al lanzar confirmaremos los metodos de pago disponibles a quienes esten en la lista de espera.',
+  },
+  {
+    q: 'Me hacen estudio de credito?',
+    a: 'Hacemos una verificacion de identidad basica: cedula, selfie y comprobante de residencia. No es un estudio de credito tradicional. Queremos saber quien eres, no cuanto te ha prestado un banco antes.',
+  },
+  {
+    q: 'Los productos son nuevos o usados?',
+    a: 'Al lanzamiento trabajamos con equipos nuevos y equipos reacondicionados certificados. Siempre vas a ver el estado exacto del producto antes de rentarlo, sin letra pequena.',
+  },
+  {
+    q: 'Al final termino pagando mas que si lo compro?',
+    a: 'Depende de cuanto tiempo lo uses. Si piensas quedarte con el equipo cinco anos, comprarlo suele salir mejor. Rentar gana cuando no quieres desembolsar todo hoy, cuando lo necesitas por un tiempo definido, o cuando quieres poder cambiarte a algo mejor sin perder dinero revendiendo.',
+  },
+  {
+    q: 'Cuando arrancan?',
+    a: 'Estamos preparando el lanzamiento en Venezuela. Quien este en la lista de espera entra primero y con condiciones preferenciales de lanzamiento.',
+  },
+];
+---
+
+<section id="preguntas" class="scroll-mt-24 bg-white py-20 sm:py-28">
+  <div class="container-x">
+    <div class="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
+      <div class="reveal lg:sticky lg:top-28 lg:self-start">
+        <p class="eyebrow">Preguntas frecuentes</p>
+        <h2 class="mt-5 text-3xl leading-[1.12] font-bold sm:text-4xl">
+          Las dudas que <span class="text-flame-500">todo el mundo</span> tiene la primera vez.
+        </h2>
+        <p class="mt-5 text-lg leading-relaxed text-ink-soft">
+          Si algo no te queda claro, escribenos. Preferimos explicarlo mil veces antes que
+          tengas una sorpresa despues.
+        </p>
+        <a
+          href="mailto:hola@lendix.app"
+          class="mt-7 inline-flex items-center gap-2 rounded-full border border-ink/12 bg-white px-6 py-3.5 text-sm font-semibold text-ink transition-all hover:border-flame-400 hover:text-flame-600"
+        >
+          Escribirnos
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path
+              d="M4 10h11m0 0-4-4m4 4-4 4"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+          </svg>
+        </a>
+      </div>
+
+      <div class="reveal divide-y divide-hairline border-y border-hairline">
+        {
+          faqs.map((faq, i) => (
+            <details class="group" name="faq" open={i === 0}>
+              <summary class="flex cursor-pointer list-none items-start justify-between gap-6 py-5 text-left [&::-webkit-details-marker]:hidden">
+                <h3 class="font-display text-[1.05rem] font-semibold text-ink transition-colors group-hover:text-flame-600 sm:text-lg">
+                  {faq.q}
+                </h3>
+                <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-hairline text-slate-muted transition-all group-open:rotate-45 group-open:border-flame-400 group-open:bg-flame-50 group-open:text-flame-600">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  </svg>
+                </span>
+              </summary>
+              <p class="pb-6 pr-12 text-[0.975rem] leading-relaxed text-ink-soft">{faq.a}</p>
+            </details>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+
+  <script
+    type="application/ld+json"
+    set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqs.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    })}
+  />
+</section>

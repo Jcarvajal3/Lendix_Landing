@@ -1,0 +1,197 @@
+@import 'tailwindcss';
+
+/* ==========================================================================
+   Lendix — Manual de marca
+   Naranja / amarillo sobre crema, blanco y grises. Mucho espacio negativo.
+   ========================================================================== */
+
+@theme {
+  /* --- Marca --------------------------------------------------------- */
+  --color-flame-50: #fff7ed;
+  --color-flame-100: #ffedd5;
+  --color-flame-200: #fed7aa;
+  --color-flame-300: #fdba74;
+  --color-flame-400: #ff9142;
+  --color-flame-500: #ff6b2c;
+  --color-flame-600: #f2530f;
+  --color-flame-700: #c93d09;
+  --color-flame-800: #9a3212;
+
+  --color-sun-100: #fff4d1;
+  --color-sun-200: #ffe8a3;
+  --color-sun-300: #ffd968;
+  --color-sun-400: #ffc94a;
+  --color-sun-500: #f9b208;
+  --color-sun-600: #d99206;
+
+  /* Crema del manual de marca */
+  --color-cream: #fdf3e6;
+  --color-cream-deep: #fbead4;
+
+  /* --- Neutros ------------------------------------------------------- */
+  --color-ink: #131110;
+  --color-ink-soft: #3d3835;
+  --color-slate-muted: #7b736d;
+  --color-hairline: #e9e3dc;
+
+  /* --- Tipografia ---------------------------------------------------- */
+  --font-display: 'Space Grotesk Variable', 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* --- Radios -------------------------------------------------------- */
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
+  --radius-4xl: 2.25rem;
+
+  /* --- Animaciones --------------------------------------------------- */
+  --animate-marquee: marquee 38s linear infinite;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5.5rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: #ffffff;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: var(--color-flame-500);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-flame-500);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+}
+
+/* ==========================================================================
+   Utilidades de marca
+   ========================================================================== */
+
+@utility container-x {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 78rem;
+  padding-inline: 1.25rem;
+
+  @media (width >= 40rem) {
+    padding-inline: 2rem;
+  }
+
+  @media (width >= 80rem) {
+    padding-inline: 2.5rem;
+  }
+}
+
+/* Degradado firma de la marca (tomado del manual: naranja -> amarillo -> crema) */
+@utility brand-gradient {
+  background-image: linear-gradient(
+    115deg,
+    var(--color-flame-600) 0%,
+    var(--color-flame-500) 26%,
+    var(--color-sun-400) 62%,
+    #fdf6e3 100%
+  );
+}
+
+@utility text-gradient {
+  background-image: linear-gradient(100deg, var(--color-flame-600) 0%, var(--color-sun-500) 100%);
+  background-clip: text;
+  color: transparent;
+}
+
+/* Etiqueta de seccion: INSIGHT 2 / COMO FUNCIONA / etc. */
+@utility eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-slate-muted);
+}
+
+@utility card-surface {
+  background-color: #fff;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-3xl);
+}
+
+/* Aparicion suave al hacer scroll.
+   Mejora progresiva: por defecto el contenido SE VE. El estado oculto solo se
+   aplica cuando el script del <head> confirma que puede revelarlo despues.
+   Asi, si el JS falla, la landing sigue siendo legible en vez de quedar vacia. */
+@layer utilities {
+  .reveal {
+    transition:
+      opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  html.reveal-ready .reveal:not(.is-visible) {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  html.reveal-ready .reveal:not(.is-visible) {
+    opacity: 1;
+    transform: none;
+  }
+
+  .reveal {
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

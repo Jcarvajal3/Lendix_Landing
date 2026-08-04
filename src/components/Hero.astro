@@ -1,0 +1,151 @@
+---
+import ProductImage from './ProductImage.astro';
+
+const trust = [
+  'Sin comprar el producto',
+  'Devuelve cuando quieras',
+  'Soporte y garantia incluidos',
+];
+---
+
+<section id="top" class="relative overflow-hidden bg-cream pt-[4.5rem]">
+  <!-- Degradado firma del manual de marca -->
+  <div
+    class="pointer-events-none absolute -bottom-[38%] -left-[18%] h-[120%] w-[95%] rounded-[50%] opacity-90 blur-3xl brand-gradient"
+    aria-hidden="true"
+  >
+  </div>
+  <div
+    class="pointer-events-none absolute -top-24 right-[-10%] h-[36rem] w-[36rem] rounded-full bg-sun-200/50 blur-3xl"
+    aria-hidden="true"
+  >
+  </div>
+
+  <div class="container-x relative">
+    <div class="grid items-center gap-14 py-16 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:py-28">
+      <!-- Copy -->
+      <div>
+        <span
+          class="inline-flex items-center gap-2 rounded-full border border-flame-200 bg-white/80 px-4 py-1.5 text-xs font-semibold tracking-wide text-flame-700 backdrop-blur"
+        >
+          <span class="relative flex h-2 w-2">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-flame-400 opacity-75"></span>
+            <span class="relative inline-flex h-2 w-2 rounded-full bg-flame-500"></span>
+          </span>
+          Proximamente en Venezuela
+        </span>
+
+        <h1 class="mt-6 text-[2.6rem] leading-[1.04] font-bold sm:text-6xl lg:text-[4.15rem]">
+          Deja de comprar.
+          <br />
+          <span class="text-gradient">Usalo por una renta</span>
+          <br />
+          mensual.
+        </h1>
+
+        <p class="mt-6 max-w-xl text-lg leading-relaxed text-ink-soft sm:text-xl">
+          Consolas, laptops, televisores y electrodomesticos por una cuota fija al mes.
+          Sin pagar cientos de dolares de golpe. Y si ya no lo quieres,
+          <strong class="font-semibold text-ink">lo devuelves y dejas de pagar</strong>.
+        </p>
+
+        <div class="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <a
+            href="#lista-de-espera"
+            class="inline-flex items-center justify-center gap-2 rounded-full bg-flame-500 px-7 py-4 text-base font-semibold text-white shadow-lg shadow-flame-500/30 transition-all hover:bg-flame-600 hover:shadow-xl hover:shadow-flame-500/35 active:scale-[0.98]"
+          >
+            Apuntarme a la lista
+            <svg class="h-4.5 w-4.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path
+                d="M4 10h11m0 0-4-4m4 4-4 4"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+            </svg>
+          </a>
+
+          <a
+            href="#que-es"
+            class="inline-flex items-center justify-center gap-2 rounded-full border border-ink/12 bg-white px-7 py-4 text-base font-semibold text-ink transition-all hover:border-ink/25 hover:shadow-md active:scale-[0.98]"
+          >
+            Explicamelo simple
+          </a>
+        </div>
+
+        <ul class="mt-9 flex flex-wrap gap-x-6 gap-y-3">
+          {
+            trust.map((item) => (
+              <li class="flex items-center gap-2 text-sm font-medium text-ink-soft">
+                <svg class="h-4.5 w-4.5 shrink-0 text-flame-500" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <circle cx="10" cy="10" r="9" fill="currentColor" opacity="0.14" />
+                  <path
+                    d="m6 10.3 2.6 2.6L14 7.5"
+                    stroke="currentColor"
+                    stroke-width="1.9"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                {item}
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <!-- Mock de producto -->
+      <div class="relative mx-auto w-full max-w-[26rem] lg:max-w-none">
+        <div
+          class="card-surface group relative overflow-hidden p-3 shadow-2xl shadow-ink/10 ring-1 ring-white/60 backdrop-blur"
+        >
+          <ProductImage
+            slug="nintendo-switch-2"
+            name="Nintendo Switch 2"
+            loading="eager"
+            class="aspect-4/3 rounded-2xl"
+            sizes="(min-width: 1024px) 26rem, 90vw"
+          />
+
+          <div class="px-4 pt-5 pb-3">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-xs font-semibold tracking-widest text-slate-muted uppercase">Gaming</p>
+                <h2 class="mt-1 font-display text-xl font-bold">Nintendo Switch 2</h2>
+              </div>
+              <span class="rounded-full bg-sun-100 px-3 py-1 text-xs font-semibold text-sun-600">Mas pedido</span>
+            </div>
+
+            <div class="mt-5 flex items-end justify-between gap-4 border-t border-hairline pt-5">
+              <div>
+                <p class="text-sm text-slate-muted">Renta desde</p>
+                <p class="font-display text-3xl font-bold text-ink">
+                  $32<span class="text-base font-semibold text-slate-muted">/mes</span>
+                </p>
+              </div>
+              <div class="text-right">
+                <p class="text-sm text-slate-muted">Comprarla cuesta</p>
+                <p class="font-display text-lg font-semibold text-slate-muted line-through">$499</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chip flotante -->
+        <div
+          class="absolute -bottom-5 -left-4 hidden rounded-2xl border border-hairline bg-white px-4 py-3 shadow-xl shadow-ink/10 sm:block lg:-left-8"
+        >
+          <p class="text-[0.7rem] font-semibold tracking-widest text-slate-muted uppercase">Te aburriste?</p>
+          <p class="mt-0.5 text-sm font-semibold text-ink">Devuelvela y dejas de pagar</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Curva de transicion hacia la seccion blanca -->
+  <div class="relative h-10 sm:h-16" aria-hidden="true">
+    <svg class="absolute bottom-0 h-full w-full" viewBox="0 0 1440 80" preserveAspectRatio="none">
+      <path d="M0 80h1440V0c-240 52-560 68-1440 22V80Z" fill="#fff"></path>
+    </svg>
+  </div>
+</section>

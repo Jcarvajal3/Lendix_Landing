@@ -1,0 +1,128 @@
+---
+import Logo from './Logo.astro';
+
+const links = [
+  { href: '#que-es', label: 'Que es Lendix' },
+  { href: '#como-funciona', label: 'Como funciona' },
+  { href: '#catalogo', label: 'Catalogo' },
+  { href: '#comparativa', label: 'Rentar vs comprar' },
+  { href: '#preguntas', label: 'Preguntas' },
+];
+---
+
+<header
+  id="nav"
+  class="fixed inset-x-0 top-0 z-50 transition-[background-color,box-shadow,backdrop-filter] duration-300"
+  data-nav
+>
+  <div class="container-x">
+    <div class="flex h-[4.5rem] items-center justify-between gap-6">
+      <a href="#top" class="shrink-0" aria-label="Lendix — inicio">
+        <Logo />
+      </a>
+
+      <nav aria-label="Principal" class="hidden lg:block">
+        <ul class="flex items-center gap-1">
+          {
+            links.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="rounded-full px-3.5 py-2 text-[0.9rem] font-medium text-ink-soft transition-colors hover:bg-flame-50 hover:text-flame-700"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <div class="flex items-center gap-2">
+        <a
+          href="#lista-de-espera"
+          class="inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-flame-600 hover:shadow-lg hover:shadow-flame-500/25 active:scale-[0.98]"
+        >
+          Quiero mi producto
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M4 10h11m0 0-4-4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </a>
+
+        <button
+          type="button"
+          class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-hairline bg-white/80 text-ink lg:hidden"
+          aria-label="Abrir menu"
+          aria-expanded="false"
+          aria-controls="menu-movil"
+          data-menu-toggle
+        >
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menu movil -->
+  <div id="menu-movil" class="container-x hidden pb-4 lg:hidden" data-menu-panel>
+    <nav aria-label="Principal movil" class="card-surface overflow-hidden p-2 shadow-xl shadow-ink/5">
+      <ul>
+        {
+          links.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                class="block rounded-2xl px-4 py-3 text-[0.95rem] font-medium text-ink-soft transition-colors hover:bg-flame-50 hover:text-flame-700"
+                data-menu-link
+              >
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<script is:inline>
+  (function () {
+    const nav = document.querySelector('[data-nav]');
+    const toggle = document.querySelector('[data-menu-toggle]');
+    const panel = document.querySelector('[data-menu-panel]');
+    if (!nav) return;
+
+    const solid = ['bg-white/85', 'backdrop-blur-xl', 'shadow-[0_1px_0_rgba(0,0,0,0.06)]'];
+
+    const onScroll = () => {
+      const scrolled = window.scrollY > 12;
+      solid.forEach((cls) => nav.classList.toggle(cls, scrolled));
+    };
+
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    if (toggle && panel) {
+      const close = () => {
+        panel.classList.add('hidden');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-label', 'Abrir menu');
+      };
+
+      toggle.addEventListener('click', () => {
+        const open = panel.classList.toggle('hidden') === false;
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.setAttribute('aria-label', open ? 'Cerrar menu' : 'Abrir menu');
+        if (open) solid.forEach((cls) => nav.classList.add(cls));
+        else onScroll();
+      });
+
+      panel.querySelectorAll('[data-menu-link]').forEach((link) => link.addEventListener('click', close));
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') close();
+      });
+    }
+  })();
+</script>

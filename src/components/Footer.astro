@@ -1,0 +1,80 @@
+---
+import Logo from './Logo.astro';
+
+const year = new Date().getFullYear();
+
+const columns = [
+  {
+    title: 'Lendix',
+    links: [
+      { label: 'Que es Lendix', href: '#que-es' },
+      { label: 'Como funciona', href: '#como-funciona' },
+      { label: 'Rentar vs comprar', href: '#comparativa' },
+    ],
+  },
+  {
+    title: 'Productos',
+    links: [
+      { label: 'Catalogo', href: '#catalogo' },
+      { label: 'Pedir un producto', href: '#lista-de-espera' },
+      { label: 'Lista de espera', href: '#lista-de-espera' },
+    ],
+  },
+  {
+    title: 'Ayuda',
+    links: [
+      { label: 'Preguntas frecuentes', href: '#preguntas' },
+      { label: 'hola@lendix.app', href: 'mailto:hola@lendix.app' },
+    ],
+  },
+];
+---
+
+<footer class="border-t border-hairline bg-white">
+  <div class="container-x">
+    <div class="grid gap-12 py-16 lg:grid-cols-[1.4fr_2fr] lg:gap-8">
+      <div>
+        <Logo />
+        <p class="mt-5 max-w-sm text-[0.95rem] leading-relaxed text-ink-soft">
+          Renta tecnologia y electrodomesticos por una cuota mensual. Usalo el tiempo que
+          quieras y devuelvelo cuando ya no lo necesites.
+        </p>
+        <p class="mt-6 inline-flex items-center gap-2 rounded-full bg-cream px-4 py-2 text-sm font-medium text-ink-soft">
+          <span class="h-2 w-2 rounded-full bg-flame-500"></span>
+          Preparando el lanzamiento en Venezuela
+        </p>
+      </div>
+
+      <div class="grid gap-8 sm:grid-cols-3">
+        {
+          columns.map((col) => (
+            <div>
+              <h3 class="font-display text-sm font-bold tracking-wide text-ink uppercase">{col.title}</h3>
+              <ul class="mt-4 space-y-2.5">
+                {col.links.map((link) => (
+                  <li>
+                    <a
+                      href={link.href}
+                      class="text-[0.925rem] text-ink-soft transition-colors hover:text-flame-600"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <div
+      class="flex flex-col gap-3 border-t border-hairline py-7 text-[0.85rem] text-slate-muted sm:flex-row sm:items-center sm:justify-between"
+    >
+      <p>&copy; {year} Lendix. Todos los derechos reservados.</p>
+      <p>
+        Precios referenciales en USD. Sujetos a verificacion y disponibilidad al momento del lanzamiento.
+      </p>
+    </div>
+  </div>
+</footer>
