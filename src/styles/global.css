@@ -131,6 +131,17 @@
   );
 }
 
+/* Mismo degradado, invertido horizontalmente: naranja a la derecha, amarillo/crema a la izquierda. Usado en el hero para dejar el lado del texto mas claro. */
+@utility brand-gradient-flip {
+  background-image: linear-gradient(
+    -115deg,
+    var(--color-flame-600) 0%,
+    var(--color-flame-500) 26%,
+    var(--color-sun-400) 62%,
+    #fdf6e3 100%
+  );
+}
+
 @utility text-gradient {
   background-image: linear-gradient(100deg, var(--color-flame-600) 0%, var(--color-sun-500) 100%);
   background-clip: text;
