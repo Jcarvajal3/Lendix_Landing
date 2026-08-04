@@ -1,36 +1,59 @@
 ---
+import ProductImage from './ProductImage.astro';
+import { products } from '../data/products';
+
+// Usamos un producto real del catalogo para que los precios de esta seccion
+// nunca se desincronicen de los que muestra la grilla de productos.
+const hero = products.find((p) => p.slug === 'macbook-air-2022') ?? products[0];
+const savedToday = hero.retail - hero.monthly;
+
 const rows = [
   {
+    icon: 'wallet',
     topic: 'Lo que pagas hoy',
-    buy: '$749 de una sola vez',
-    lendix: '$45 y ya lo tienes en casa',
+    buy: `$${hero.retail} de una sola vez`,
+    lendix: `$${hero.monthly} y ya lo tienes en casa`,
   },
   {
+    icon: 'shield',
     topic: 'Si se daña',
     buy: 'Lo pagas tu, o peleas la garantia',
     lendix: 'Lo reparamos o lo reemplazamos',
   },
   {
+    icon: 'sparkle',
     topic: 'Si sale un modelo mejor',
     buy: 'Te quedaste con el viejo',
-    lendix: 'Cambias de equipo',
+    lendix: 'Cambias al equipo nuevo',
   },
   {
+    icon: 'box',
     topic: 'Si ya no lo necesitas',
     buy: 'Lo revendes por la mitad',
     lendix: 'Lo devuelves y dejas de pagar',
   },
   {
+    icon: 'lock',
     topic: 'Si te lo roban',
     buy: 'Perdiste tu dinero',
     lendix: 'Estas cubierto',
   },
   {
+    icon: 'calendar',
     topic: 'Tu compromiso',
     buy: 'Cuotas fijas hasta terminar de pagar',
     lendix: 'Mes a mes, lo decides tu',
   },
 ];
+
+const icons: Record<string, string> = {
+  wallet: 'M2.5 6.5h15v9a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1v-9Zm0 0 2-3h11l2 3M13 11.5h2',
+  shield: 'M10 2.5 4.5 4.8v5c0 3.4 2.3 6.2 5.5 7 3.2-.8 5.5-3.6 5.5-7v-5L10 2.5Zm1.5 3.8L8.7 10h2.6l-2.8 3.7',
+  sparkle: 'm10 2.5 1.9 4.6 4.6 1.9-4.6 1.9L10 15.5 8.1 10.9 3.5 9l4.6-1.9L10 2.5Z',
+  box: 'M3 6.5 10 3l7 3.5v7L10 17l-7-3.5v-7Zm0 0 7 3.5m0 0 7-3.5m-7 3.5V17',
+  lock: 'M6.2 8.8V6.5a3.8 3.8 0 0 1 7.6 0v2.3M4.5 8.8h11v8h-11v-8Zm5.5 3v2.5',
+  calendar: 'M3.5 5.5h13v11h-13v-11Zm0 3.5h13M7 3v3M13 3v3',
+};
 ---
 
 <section id="comparativa" class="scroll-mt-24 bg-cream py-20 sm:py-28">
@@ -43,21 +66,76 @@ const rows = [
         <span class="text-flame-500">Rentar te deja salir.</span>
       </h2>
       <p class="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-ink-soft">
-        Usemos de ejemplo un MacBook Air. Mismo equipo, dos formas muy distintas de tenerlo.
+        Usemos de ejemplo este {hero.name}. Mismo equipo, dos formas muy distintas de tenerlo.
       </p>
     </div>
 
-    <div class="reveal mt-14 overflow-hidden rounded-4xl border border-hairline bg-white shadow-xl shadow-ink/5">
-      <!-- Encabezado -->
-      <div class="grid grid-cols-[1fr_1fr] gap-px bg-hairline sm:grid-cols-[1.1fr_1fr_1fr]">
+    <!-- Producto en foco: la foto y los dos precios enfrentados -->
+    <div
+      class="reveal mt-14 grid items-center gap-8 overflow-hidden rounded-4xl border border-hairline bg-white p-6 shadow-xl shadow-ink/5 sm:p-8 lg:grid-cols-[minmax(0,22rem)_1fr] lg:gap-12 lg:p-10"
+    >
+      <ProductImage
+        slug={hero.slug}
+        name={hero.name}
+        class="aspect-4/3 rounded-3xl"
+        sizes="(min-width: 1024px) 22rem, 90vw"
+      />
+
+      <div>
+        <p class="text-xs font-semibold tracking-widest text-slate-muted uppercase">{hero.category}</p>
+        <h3 class="mt-1.5 font-display text-2xl font-bold sm:text-3xl">{hero.name}</h3>
+
+        <ul class="mt-4 flex flex-wrap gap-1.5">
+          {
+            hero.specs.map((spec) => (
+              <li class="rounded-full bg-cream px-2.5 py-1 text-[0.75rem] font-medium text-ink-soft">{spec}</li>
+            ))
+          }
+        </ul>
+
+        <!-- Los dos caminos, uno al lado del otro -->
+        <div class="mt-7 grid gap-3 sm:grid-cols-2">
+          <div class="rounded-3xl border border-hairline bg-cream/50 p-5">
+            <p class="text-[0.8rem] font-semibold tracking-wide text-slate-muted uppercase">Comprarlo</p>
+            <p class="mt-2 font-display text-3xl font-bold text-slate-muted">${hero.retail}</p>
+            <p class="mt-1 text-[0.85rem] text-slate-muted">de una sola vez, hoy</p>
+          </div>
+
+          <div class="relative rounded-3xl bg-flame-500 p-5 shadow-lg shadow-flame-500/25">
+            <p class="text-[0.8rem] font-semibold tracking-wide text-white/80 uppercase">Con Lendix</p>
+            <p class="mt-2 font-display text-3xl font-bold text-white">
+              ${hero.monthly}<span class="text-base font-semibold text-white/75">/mes</span>
+            </p>
+            <p class="mt-1 text-[0.85rem] text-white/85">y te lo llevas hoy</p>
+          </div>
+        </div>
+
+        <p class="mt-4 inline-flex items-center gap-2 rounded-full bg-flame-50 px-4 py-2 text-sm font-semibold text-flame-700">
+          <svg class="h-4.5 w-4.5 shrink-0" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path
+              d="M10 16.5V3.5m0 0L5.5 8M10 3.5 14.5 8"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+          </svg>
+          Te quedas con ${savedToday} en el bolsillo este mes
+        </p>
+      </div>
+    </div>
+
+    <!-- Escenario por escenario -->
+    <div class="reveal mt-6 overflow-hidden rounded-4xl border border-hairline bg-white shadow-xl shadow-ink/5">
+      <!-- Encabezado de columnas -->
+      <div class="grid grid-cols-2 gap-px bg-hairline sm:grid-cols-[1.15fr_1fr_1fr]">
         <div class="hidden bg-white p-5 sm:block"></div>
         <div class="bg-white p-5 text-center sm:p-6">
           <p class="font-display text-base font-bold text-slate-muted sm:text-lg">Comprarlo</p>
-          <p class="mt-1 text-sm text-slate-muted">$749 de contado</p>
+          <p class="mt-1 text-sm text-slate-muted">${hero.retail} de contado</p>
         </div>
-        <div class="bg-flame-50 p-5 text-center sm:p-6">
-          <p class="font-display text-base font-bold text-flame-700 sm:text-lg">Con Lendix</p>
-          <p class="mt-1 text-sm text-flame-600">$45 al mes</p>
+        <div class="bg-flame-500 p-5 text-center sm:p-6">
+          <p class="font-display text-base font-bold text-white sm:text-lg">Con Lendix</p>
+          <p class="mt-1 text-sm text-white/85">${hero.monthly} al mes</p>
         </div>
       </div>
 
@@ -65,13 +143,29 @@ const rows = [
       <div class="divide-y divide-hairline">
         {
           rows.map((row) => (
-            <div class="grid grid-cols-[1fr_1fr] sm:grid-cols-[1.1fr_1fr_1fr]">
-              <p class="col-span-2 bg-cream/50 px-5 pt-4 pb-2 text-sm font-semibold text-ink sm:col-span-1 sm:bg-transparent sm:px-6 sm:py-5 sm:text-[0.95rem]">
+            <div class="grid grid-cols-2 sm:grid-cols-[1.15fr_1fr_1fr]">
+              <p class="col-span-2 flex items-center gap-2.5 bg-cream/60 px-5 pt-4 pb-3 text-sm font-semibold text-ink sm:col-span-1 sm:bg-transparent sm:px-6 sm:py-5 sm:text-[0.95rem]">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-flame-50 text-flame-600 sm:h-10 sm:w-10">
+                  <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path
+                      d={icons[row.icon]}
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
                 {row.topic}
               </p>
 
               <div class="flex items-start gap-2.5 px-5 py-4 sm:px-6 sm:py-5">
-                <svg class="mt-0.5 h-4.5 w-4.5 shrink-0 text-slate-muted" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <svg
+                  class="mt-0.5 h-4.5 w-4.5 shrink-0 text-slate-muted"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  aria-hidden="true"
+                >
                   <circle cx="10" cy="10" r="9" fill="currentColor" opacity="0.12" />
                   <path d="m7 7 6 6M13 7l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                 </svg>
