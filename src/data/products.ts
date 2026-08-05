@@ -62,6 +62,33 @@ export const products: Product[] = [
     retail: 649,
     specs: ['Panel OLED 4K', 'webOS Smart TV', 'HDR10'],
   },
+  {
+    slug: 'ipad-11-pulgadas',
+    name: 'Apple iPad 11"',
+    category: 'Tablets',
+    blurb: 'Potencia y portabilidad para estudiar, trabajar o crear.',
+    monthly: 28,
+    retail: 449,
+    specs: ['Pantalla Liquid Retina 11"', 'Chip Apple M2', '128 GB'],
+  },
+  {
+    slug: 'aire-acondicionado-albott',
+    name: 'Aire Acondicionado Albott 115V',
+    category: 'Hogar',
+    blurb: 'Refresca tu espacio con bajo consumo y enfriamiento rapido.',
+    monthly: 35,
+    retail: 549,
+    specs: ['115V / 12,000 BTU', 'Inverter Ahorro', 'Control Remoto'],
+  },
+  {
+    slug: 'silla-neo-chair',
+    name: 'Silla Ergonomica Neo Chair',
+    category: 'Oficina',
+    blurb: 'Ergonomia superior y soporte lumbar para tu jornada laboral.',
+    monthly: 18,
+    retail: 220,
+    specs: ['Soporte Lumbar', 'Malla Transpirable', 'Ajuste Ergonomico'],
+  },
 ];
 
 /** Cuanto ahorras el primer mes frente a comprar de contado */

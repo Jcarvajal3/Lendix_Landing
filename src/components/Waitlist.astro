@@ -3,12 +3,6 @@ import { products } from '../data/products';
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
 const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
-
-const perks = [
-  'Entras primero cuando abramos',
-  'Condiciones preferenciales de lanzamiento',
-  'Tu voto decide que productos sumamos',
-];
 ---
 
 <section id="lista-de-espera" class="relative scroll-mt-24 overflow-hidden bg-ink py-20 sm:py-28">
@@ -30,34 +24,12 @@ const perks = [
       <div class="reveal">
         <p class="eyebrow text-flame-400">Lista de espera</p>
         <h2 class="mt-5 text-3xl leading-[1.1] font-bold text-white sm:text-5xl">
-          Apuntate y elige
-          <span class="text-flame-400">que producto quieres</span> primero.
+          No tenemos el producto? <span class="text-flame-400">Pidelo aqui</span>.
         </h2>
         <p class="mt-6 max-w-lg text-lg leading-relaxed text-white/70">
           Todavia no estamos abiertos al publico. Dejanos tus datos y te avisamos apenas
           puedas rentar. Sin compromiso y sin pagar nada ahora.
         </p>
-
-        <ul class="mt-9 space-y-4">
-          {
-            perks.map((perk) => (
-              <li class="flex items-center gap-3 text-[0.975rem] font-medium text-white/85">
-                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sun-400 text-ink">
-                  <svg class="h-3.5 w-3.5" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                    <path
-                      d="m3 7.3 2.6 2.6L11 4.5"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-                {perk}
-              </li>
-            ))
-          }
-        </ul>
       </div>
 
       <!-- Formulario -->
