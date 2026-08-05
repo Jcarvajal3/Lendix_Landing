@@ -14,12 +14,6 @@ const steps = [
   },
   {
     n: '03',
-    title: 'Recibes el producto en casa',
-    text: 'Te lo llevamos a tu direccion. Lo desempacas y lo usas como si fuera tuyo, desde el primer dia.',
-    detail: 'Envio incluido en tu renta.',
-  },
-  {
-    n: '04',
     title: 'Pagas tu renta cada mes',
     text: 'Una cuota fija, siempre el mismo monto. Mientras pagues, el producto se queda contigo.',
     detail: 'Sin sorpresas al final del mes.',
@@ -32,20 +26,20 @@ const steps = [
     <div class="reveal max-w-3xl">
       <p class="eyebrow">Como funciona</p>
       <h2 class="mt-5 text-3xl leading-[1.12] font-bold sm:text-5xl">
-        Cuatro pasos. <span class="text-flame-500">Nada mas.</span>
+        Tres pasos. <span class="text-flame-500">Nada mas.</span>
       </h2>
-      <p class="mt-5 text-lg leading-relaxed text-ink-soft">
+      <p class="mt-5 text-base leading-relaxed text-ink-soft">
         Desde que eliges tu producto hasta que lo tienes encendido en tu casa.
       </p>
     </div>
 
-    <ol class="reveal mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <ol class="reveal mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {
         steps.map((step) => (
           <li class="relative flex h-full flex-col rounded-3xl border border-white/80 bg-white p-7 shadow-sm">
             <span class="font-display text-4xl font-bold text-flame-200">{step.n}</span>
             <h3 class="mt-4 font-display text-lg font-bold">{step.title}</h3>
-            <p class="mt-2.5 flex-1 text-[0.95rem] leading-relaxed text-ink-soft">{step.text}</p>
+            <p class="mt-2.5 flex-1 text-base leading-relaxed text-ink-soft">{step.text}</p>
             <p class="mt-5 border-t border-hairline pt-4 text-[0.85rem] font-medium text-flame-600">{step.detail}</p>
           </li>
         ))

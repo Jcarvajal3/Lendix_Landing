@@ -67,8 +67,8 @@ export const products: Product[] = [
     name: 'Apple iPad 11"',
     category: 'Tablets',
     blurb: 'Potencia y portabilidad para estudiar, trabajar o crear.',
-    monthly: 28,
-    retail: 449,
+    monthly: 25,
+    retail: 399,
     specs: ['Pantalla Liquid Retina 11"', 'Chip Apple M2', '128 GB'],
   },
   {
@@ -76,8 +76,8 @@ export const products: Product[] = [
     name: 'Aire Acondicionado Albott 115V',
     category: 'Hogar',
     blurb: 'Refresca tu espacio con bajo consumo y enfriamiento rapido.',
-    monthly: 35,
-    retail: 549,
+    monthly: 22,
+    retail: 350,
     specs: ['115V / 12,000 BTU', 'Inverter Ahorro', 'Control Remoto'],
   },
   {
@@ -85,8 +85,8 @@ export const products: Product[] = [
     name: 'Silla Ergonomica Neo Chair',
     category: 'Oficina',
     blurb: 'Ergonomia superior y soporte lumbar para tu jornada laboral.',
-    monthly: 18,
-    retail: 220,
+    monthly: 7,
+    retail: 60,
     specs: ['Soporte Lumbar', 'Malla Transpirable', 'Ajuste Ergonomico'],
   },
 ];
