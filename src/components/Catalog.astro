@@ -51,9 +51,7 @@ const priceFor = (monthly: number, plan: 'libre' | 'anual') =>
             <span class="ml-1.5 rounded-full bg-sun-300 px-2 py-0.5 text-[0.7rem] font-bold text-ink">-20%</span>
           </button>
         </div>
-        <p class="mt-2.5 max-w-[19rem] text-[0.8rem] leading-relaxed text-slate-muted" data-plan-hint>
-          Devuelves cuando quieras, sin penalidad.
-        </p>
+        <p class="mt-2.5 max-w-[19rem] text-[0.8rem] leading-relaxed text-slate-muted" data-plan-hint></p>
       </div>
     </div>
 
@@ -153,7 +151,7 @@ const priceFor = (monthly: number, plan: 'libre' | 'anual') =>
     if (!buttons.length) return;
 
     const hints = {
-      libre: 'Devuelves cuando quieras, sin penalidad.',
+      libre: '',
       anual: 'Te comprometes 12 meses y pagas 20% menos cada mes.',
     };
 
