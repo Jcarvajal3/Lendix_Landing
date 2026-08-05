@@ -12,7 +12,24 @@ export type Product = {
   /** 2-3 specs cortas mostradas como chips */
   specs: string[];
   badge?: string;
+  /**
+   * 'inmediata' = hay unidades listas, se entrega en 48 h.
+   * 'pedido'    = no hay stock ahora; el cliente lo solicita y lo conseguimos.
+   * Cambia a 'pedido' todo lo que no tengas disponible: el catalogo lo dice
+   * claro y el boton pasa de "Rentarlo ahora" a "Solicitarlo".
+   */
+  entrega: 'inmediata' | 'pedido';
 };
+
+/** Descuento por comprometerse a 12 meses en vez de ir mes a mes. */
+export const LOYALTY_DISCOUNT = 0.2;
+
+export type Plan = 'libre' | 'anual';
+
+/** Renta mensual segun el plan elegido. */
+export function priceFor(monthly: number, plan: Plan): number {
+  return plan === 'libre' ? monthly : Math.round(monthly * (1 - LOYALTY_DISCOUNT));
+}
 
 export const products: Product[] = [
   {
@@ -24,6 +41,7 @@ export const products: Product[] = [
     retail: 499,
     specs: ['Pantalla 7.9" HDR', '256 GB', 'Joy-Con 2 incluidos'],
     badge: 'Mas pedido',
+    entrega: 'inmediata',
   },
   {
     slug: 'macbook-air-2022',
@@ -33,6 +51,7 @@ export const products: Product[] = [
     monthly: 48,
     retail: 799,
     specs: ['Chip Apple M2', '8 GB RAM · 256 GB SSD', 'Liquid Retina 13.6"'],
+    entrega: 'inmediata',
   },
   {
     slug: 'lenovo-thinkpad',
@@ -43,6 +62,7 @@ export const products: Product[] = [
     retail: 649,
     specs: ['Intel Core i5', '16 GB RAM · 512 GB SSD', 'Teclado ThinkPad'],
     badge: 'Ideal para trabajo',
+    entrega: 'inmediata',
   },
   {
     slug: 'lavadora-samsung',
@@ -52,6 +72,7 @@ export const products: Product[] = [
     monthly: 29,
     retail: 459,
     specs: ['19 kg de carga', 'Digital Inverter', 'Eco Bubble'],
+    entrega: 'inmediata',
   },
   {
     slug: 'lg-oled-tv',
@@ -61,6 +82,7 @@ export const products: Product[] = [
     monthly: 39,
     retail: 649,
     specs: ['Panel OLED 4K', 'webOS Smart TV', 'HDR10'],
+    entrega: 'inmediata',
   },
   {
     slug: 'ipad-11-pulgadas',
@@ -70,6 +92,7 @@ export const products: Product[] = [
     monthly: 25,
     retail: 399,
     specs: ['Pantalla Liquid Retina 11"', 'Chip Apple M2', '128 GB'],
+    entrega: 'inmediata',
   },
   {
     slug: 'aire-acondicionado-albott',
@@ -79,6 +102,7 @@ export const products: Product[] = [
     monthly: 22,
     retail: 350,
     specs: ['115V / 12,000 BTU', 'Inverter Ahorro', 'Control Remoto'],
+    entrega: 'inmediata',
   },
   {
     slug: 'silla-neo-chair',
@@ -88,6 +112,7 @@ export const products: Product[] = [
     monthly: 7,
     retail: 60,
     specs: ['Soporte Lumbar', 'Malla Transpirable', 'Ajuste Ergonomico'],
+    entrega: 'inmediata',
   },
 ];
 

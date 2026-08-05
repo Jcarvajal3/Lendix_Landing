@@ -1,0 +1,483 @@
+---
+import { products, priceFor } from '../data/products';
+import { hasWhatsapp, whatsappNumber, email as contactEmail } from '../data/site';
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+
+// El resumen del pedido necesita el precio de los dos planes de cada producto.
+const catalogo = products.map((p) => ({
+  name: p.name,
+  libre: p.monthly,
+  anual: priceFor(p.monthly, 'anual'),
+  entrega: p.entrega,
+}));
+
+const pasos = [
+  'Nos dices que quieres rentar',
+  'Verificamos tu identidad por WhatsApp',
+  'Recibes tu equipo y pagas la primera renta',
+];
+---
+
+<section id="rentar" class="relative scroll-mt-24 overflow-hidden bg-ink py-20 sm:py-28">
+  <!-- Degradado de marca -->
+  <div
+    class="pointer-events-none absolute -bottom-[45%] -left-[15%] h-[110%] w-[85%] rounded-[50%] opacity-45 blur-3xl brand-gradient"
+    aria-hidden="true"
+  >
+  </div>
+  <div
+    class="pointer-events-none absolute -top-40 right-[-15%] h-[34rem] w-[34rem] rounded-full bg-flame-500/25 blur-3xl"
+    aria-hidden="true"
+  >
+  </div>
+
+  <div class="container-x relative">
+    <div class="grid items-start gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+      <!-- Copy -->
+      <div class="reveal lg:sticky lg:top-28">
+        <p class="eyebrow text-flame-400">Solicitar</p>
+        <h2 class="mt-5 text-3xl leading-[1.1] font-bold text-white sm:text-5xl">
+          Pidelo ahora.
+          <br />
+          <span class="text-flame-400">Te respondemos hoy.</span>
+        </h2>
+        <p class="mt-6 max-w-lg text-base leading-relaxed text-white/70">
+          Tres datos y listo. No pagas nada por solicitar y no te comprometes a nada hasta
+          que confirmes.
+        </p>
+
+        <ol class="mt-8 space-y-4">
+          {
+            pasos.map((paso, i) => (
+              <li class="flex items-start gap-3.5">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 font-display text-sm font-bold text-flame-400">
+                  {i + 1}
+                </span>
+                <span class="pt-0.5 text-[0.95rem] leading-relaxed text-white/80">{paso}</span>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+
+      <!-- Formulario -->
+      <div class="reveal">
+        <div class="rounded-4xl bg-white p-6 shadow-2xl shadow-black/25 sm:p-9">
+          <!-- Resumen del pedido: el usuario siempre ve que esta pidiendo -->
+          <div
+            class="mb-7 flex items-center justify-between gap-4 rounded-3xl border border-hairline bg-cream/60 px-5 py-4"
+            data-resumen
+          >
+            <div class="min-w-0">
+              <p class="text-[0.7rem] font-semibold tracking-widest text-slate-muted uppercase">Tu solicitud</p>
+              <p class="mt-1 truncate font-display text-[1.05rem] font-bold text-ink" data-resumen-producto>
+                Elige tu producto
+              </p>
+              <p class="mt-0.5 text-[0.8rem] text-slate-muted" data-resumen-plan>Plan mes a mes</p>
+            </div>
+            <div class="shrink-0 text-right">
+              <p class="font-display text-2xl font-bold text-flame-600" data-resumen-precio>—</p>
+              <p class="text-[0.75rem] text-slate-muted">al mes</p>
+            </div>
+          </div>
+
+          <form id="lead-form" novalidate class="space-y-5">
+            <div>
+              <label for="lead-producto" class="mb-1.5 block text-sm font-semibold text-ink">
+                Que quieres rentar
+              </label>
+              <select
+                id="lead-producto"
+                name="producto"
+                required
+                class="w-full appearance-none rounded-2xl border border-hairline bg-cream/50 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22m5%208%205%205%205-5%22%20stroke%3D%22%237b736d%22%20stroke-width%3D%221.7%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:1.25rem] bg-[position:right_1rem_center] bg-no-repeat px-4 py-3.5 pr-11 text-[0.95rem] text-ink transition-colors focus:border-flame-400 focus:bg-white focus:outline-none"
+              >
+                <option value="">Selecciona un producto</option>
+                {products.map((p) => <option value={p.name}>{p.name} — ${p.monthly}/mes</option>)}
+                <option value="Otro">Otro producto (lo escribo abajo)</option>
+              </select>
+            </div>
+
+            <div class="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label for="lead-nombre" class="mb-1.5 block text-sm font-semibold text-ink">Nombre</label>
+                <input
+                  id="lead-nombre"
+                  name="nombre"
+                  type="text"
+                  required
+                  autocomplete="name"
+                  placeholder="Como te llamas?"
+                  class="w-full rounded-2xl border border-hairline bg-cream/50 px-4 py-3.5 text-[0.95rem] text-ink transition-colors placeholder:text-slate-muted/70 focus:border-flame-400 focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label for="lead-telefono" class="mb-1.5 block text-sm font-semibold text-ink">WhatsApp</label>
+                <input
+                  id="lead-telefono"
+                  name="telefono"
+                  type="tel"
+                  required
+                  inputmode="tel"
+                  autocomplete="tel"
+                  placeholder="0412 000 0000"
+                  class="w-full rounded-2xl border border-hairline bg-cream/50 px-4 py-3.5 text-[0.95rem] text-ink transition-colors placeholder:text-slate-muted/70 focus:border-flame-400 focus:bg-white focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <!-- Todo lo demas es opcional y va escondido: menos campos, mas envios -->
+            <details class="group rounded-2xl border border-hairline bg-cream/30 px-4 py-3">
+              <summary
+                class="flex cursor-pointer list-none items-center justify-between text-[0.9rem] font-semibold text-ink-soft [&::-webkit-details-marker]:hidden"
+              >
+                Agregar correo, ciudad o una nota
+                <span
+                  class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-hairline text-slate-muted transition-transform group-open:rotate-45"
+                >
+                  <svg class="h-3 w-3" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"></path>
+                  </svg>
+                </span>
+              </summary>
+
+              <div class="space-y-4 pt-4 pb-1">
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label for="lead-email" class="mb-1.5 block text-sm font-semibold text-ink">Correo</label>
+                    <input
+                      id="lead-email"
+                      name="email"
+                      type="email"
+                      autocomplete="email"
+                      placeholder="tucorreo@email.com"
+                      class="w-full rounded-2xl border border-hairline bg-white px-4 py-3 text-[0.95rem] text-ink transition-colors placeholder:text-slate-muted/70 focus:border-flame-400 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label for="lead-ciudad" class="mb-1.5 block text-sm font-semibold text-ink">Ciudad</label>
+                    <input
+                      id="lead-ciudad"
+                      name="ciudad"
+                      type="text"
+                      autocomplete="address-level2"
+                      placeholder="Caracas, Valencia..."
+                      class="w-full rounded-2xl border border-hairline bg-white px-4 py-3 text-[0.95rem] text-ink transition-colors placeholder:text-slate-muted/70 focus:border-flame-400 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label for="lead-mensaje" class="mb-1.5 block text-sm font-semibold text-ink">
+                    Algo que debamos saber
+                  </label>
+                  <textarea
+                    id="lead-mensaje"
+                    name="mensaje"
+                    rows="2"
+                    maxlength="500"
+                    placeholder="Si pediste 'Otro producto', dinos cual."
+                    class="w-full resize-none rounded-2xl border border-hairline bg-white px-4 py-3 text-[0.95rem] text-ink transition-colors placeholder:text-slate-muted/70 focus:border-flame-400 focus:outline-none"
+                  ></textarea>
+                </div>
+              </div>
+            </details>
+
+            <!-- Honeypot anti-spam: invisible para personas -->
+            <div class="absolute h-0 w-0 overflow-hidden" aria-hidden="true">
+              <label for="lead-website">No llenar</label>
+              <input id="lead-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+            </div>
+
+            <button
+              type="submit"
+              data-submit
+              class="flex w-full items-center justify-center gap-2 rounded-full bg-flame-500 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-flame-500/25 transition-all hover:bg-flame-600 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <span data-submit-label>Solicitar mi renta</span>
+              <svg
+                data-spinner
+                class="hidden h-4.5 w-4.5 animate-spin"
+                viewBox="0 0 20 20"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2.5" opacity="0.3"></circle>
+                <path d="M18 10a8 8 0 0 0-8-8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path>
+              </svg>
+            </button>
+
+            <p class="flex items-center justify-center gap-2 text-center text-[0.8rem] leading-relaxed text-slate-muted">
+              <svg class="h-4 w-4 shrink-0 text-flame-500" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path
+                  d="M6.2 8.8V6.5a3.8 3.8 0 0 1 7.6 0v2.3M4.5 8.8h11v8h-11v-8Z"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+              </svg>
+              No cobramos nada por solicitar. Tus datos solo los usamos para contactarte.
+            </p>
+
+            <p
+              data-form-error
+              role="alert"
+              class="hidden rounded-2xl bg-red-50 px-4 py-3 text-center text-[0.875rem] font-medium text-red-700"
+            >
+            </p>
+          </form>
+
+          <!-- Estado de exito: el cierre real ocurre en WhatsApp -->
+          <div data-form-success class="hidden py-6 text-center" role="status">
+            <span class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-flame-50">
+              <svg class="h-8 w-8 text-flame-500" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="m6 12.5 4 4 8-9"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+              </svg>
+            </span>
+            <h3 class="mt-6 font-display text-2xl font-bold">Solicitud recibida</h3>
+            <p class="mx-auto mt-3 max-w-sm text-[0.975rem] leading-relaxed text-ink-soft">
+              Te escribimos hoy por WhatsApp para verificar tus datos y coordinar la entrega.
+            </p>
+
+            {
+              hasWhatsapp && (
+                <a
+                  data-success-whatsapp
+                  href={`https://wa.me/${whatsappNumber}`}
+                  target="_blank"
+                  rel="noopener"
+                  class="mt-7 inline-flex items-center justify-center gap-2 rounded-full bg-[#25D366] px-7 py-4 text-base font-semibold text-white shadow-lg shadow-[#25D366]/25 transition-all hover:brightness-95 active:scale-[0.98]"
+                >
+                  <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.87 9.87 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24a8.2 8.2 0 0 1 5.83 2.42 8.19 8.19 0 0 1 2.41 5.83c0 4.54-3.7 8.23-8.24 8.23Zm4.52-6.16c-.25-.13-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.78.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.44-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.43h-.48c-.16 0-.43.06-.65.31-.23.25-.86.84-.86 2.05s.88 2.38 1 2.54c.12.17 1.73 2.64 4.19 3.7.58.26 1.04.41 1.4.52.59.19 1.12.16 1.55.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.22-.16-.47-.29Z" />
+                  </svg>
+                  Continuar por WhatsApp
+                </a>
+              )
+            }
+
+            <p class="mt-5 text-sm text-slate-muted">
+              Adelantas el proceso si nos escribes tu mismo.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script
+  is:inline
+  define:vars={{ supabaseUrl, supabaseKey, catalogo, whatsappNumber, hasWhatsapp, contactEmail }}
+>
+  (function () {
+    const form = document.getElementById('lead-form');
+    if (!form) return;
+
+    const submit = form.querySelector('[data-submit]');
+    const label = form.querySelector('[data-submit-label]');
+    const spinner = form.querySelector('[data-spinner]');
+    const errorBox = form.querySelector('[data-form-error]');
+    const successBox = document.querySelector('[data-form-success]');
+    const successWa = document.querySelector('[data-success-whatsapp]');
+
+    const select = document.getElementById('lead-producto');
+    const resProducto = document.querySelector('[data-resumen-producto]');
+    const resPlan = document.querySelector('[data-resumen-plan]');
+    const resPrecio = document.querySelector('[data-resumen-precio]');
+
+    const configured = Boolean(supabaseUrl && supabaseKey && supabaseUrl.startsWith('http'));
+    const porNombre = new Map(catalogo.map((p) => [p.name, p]));
+
+    /** El plan vive en <html data-plan>: el selector del catalogo lo escribe. */
+    const planActual = () => document.documentElement.getAttribute('data-plan') || 'libre';
+
+    // ---- Resumen del pedido -------------------------------------------------
+    function pintarResumen() {
+      const nombre = select ? select.value : '';
+      const plan = planActual();
+      const item = porNombre.get(nombre);
+
+      if (resPlan) resPlan.textContent = plan === 'anual' ? 'Plan 12 meses (-20%)' : 'Plan mes a mes';
+
+      if (!nombre) {
+        if (resProducto) resProducto.textContent = 'Elige tu producto';
+        if (resPrecio) resPrecio.textContent = '—';
+        return;
+      }
+
+      if (resProducto) resProducto.textContent = nombre;
+
+      if (!item) {
+        // "Otro producto": no hay precio de lista todavia.
+        if (resPrecio) resPrecio.textContent = 'A cotizar';
+        return;
+      }
+
+      if (resPrecio) resPrecio.textContent = '$' + (plan === 'anual' ? item.anual : item.libre);
+    }
+
+    select?.addEventListener('change', pintarResumen);
+    document.addEventListener('lendix:plan', pintarResumen);
+    pintarResumen();
+
+    // ---- Cualquier boton [data-rentar] del sitio trae al usuario aqui -------
+    document.addEventListener('click', (event) => {
+      const trigger = event.target.closest?.('[data-rentar]');
+      if (!trigger) return;
+
+      const nombre = trigger.getAttribute('data-rentar');
+      if (select && nombre) {
+        // Si el producto no esta en el catalogo, cae en "Otro".
+        const existe = Array.from(select.options).some((o) => o.value === nombre);
+        select.value = existe ? nombre : 'Otro';
+        pintarResumen();
+      }
+
+      const destino = document.getElementById('rentar');
+      if (!destino) return;
+
+      event.preventDefault();
+      destino.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // Enfocamos el primer campo vacio para que solo quede escribir.
+      window.setTimeout(() => {
+        const nombreInput = document.getElementById('lead-nombre');
+        const telInput = document.getElementById('lead-telefono');
+        const target = nombreInput?.value.trim() ? telInput : nombreInput;
+        target?.focus({ preventScroll: true });
+      }, 650);
+    });
+
+    // ---- Envio --------------------------------------------------------------
+    const showError = (msg) => {
+      if (!errorBox) return;
+      errorBox.textContent = msg;
+      errorBox.classList.remove('hidden');
+    };
+
+    const setLoading = (loading) => {
+      if (submit) submit.disabled = loading;
+      if (label) label.textContent = loading ? 'Enviando...' : 'Solicitar mi renta';
+      if (spinner) spinner.classList.toggle('hidden', !loading);
+    };
+
+    // Atribucion de campanas: de que anuncio vino esta solicitud.
+    const attribution = () => {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        utm_source: params.get('utm_source'),
+        utm_medium: params.get('utm_medium'),
+        utm_campaign: params.get('utm_campaign'),
+        utm_content: params.get('utm_content'),
+        referrer: document.referrer || null,
+      };
+    };
+
+    const verExito = (payload) => {
+      form.classList.add('hidden');
+      document.querySelector('[data-resumen]')?.classList.add('hidden');
+      successBox?.classList.remove('hidden');
+
+      // El mensaje de WhatsApp llega escrito: el usuario solo pulsa enviar.
+      if (hasWhatsapp && successWa) {
+        const plan = payload.plan === 'anual' ? '12 meses' : 'mes a mes';
+        const precio = payload.precio_mes ? ` (${'$'}${payload.precio_mes}/mes)` : '';
+        const texto =
+          `Hola, soy ${payload.nombre}. Acabo de solicitar en la web: ` +
+          `${payload.producto_interes}${precio}, plan ${plan}.`;
+        successWa.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(texto)}`;
+      }
+
+      successBox?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    };
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorBox?.classList.add('hidden');
+
+      const data = new FormData(form);
+
+      // Honeypot: si viene lleno, es un bot. Fingimos exito y no guardamos nada.
+      if (String(data.get('website') || '').trim()) {
+        form.classList.add('hidden');
+        successBox?.classList.remove('hidden');
+        return;
+      }
+
+      const nombre = String(data.get('nombre') || '').trim();
+      const telefono = String(data.get('telefono') || '').trim();
+      const correo = String(data.get('email') || '').trim();
+      const producto = String(data.get('producto') || '').trim();
+
+      if (!producto) return showError('Elige que producto quieres rentar.');
+      if (nombre.length < 2) return showError('Escribe tu nombre para poder saludarte bien.');
+      if (telefono.replace(/\D/g, '').length < 7)
+        return showError('Escribe un WhatsApp valido: es por donde te contactamos.');
+      if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(correo))
+        return showError('Revisa tu correo, parece que tiene un error.');
+
+      const plan = planActual();
+      const item = porNombre.get(producto);
+
+      const payload = {
+        nombre,
+        email: correo ? correo.toLowerCase() : null,
+        telefono,
+        ciudad: String(data.get('ciudad') || '').trim() || null,
+        producto_interes: producto,
+        mensaje: String(data.get('mensaje') || '').trim() || null,
+        plan,
+        precio_mes: item ? (plan === 'anual' ? item.anual : item.libre) : null,
+        ...attribution(),
+      };
+
+      if (!configured) {
+        // Supabase todavia no esta conectado: no perdemos la solicitud en silencio.
+        console.warn('[Lendix] Supabase sin configurar. Solicitud solo en consola:', payload);
+        showError('Estamos teniendo un problema tecnico. Escribenos a ' + contactEmail + ' y te atendemos.');
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const res = await fetch(supabaseUrl.replace(/\/$/, '') + '/rest/v1/waitlist_lead', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: supabaseKey,
+            Authorization: 'Bearer ' + supabaseKey,
+            Prefer: 'return=minimal',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const body = await res.text();
+          // 23505 = unique_violation: ya nos habia escrito. Para el usuario es exito igual.
+          if (res.status === 409 || body.includes('23505')) {
+            verExito(payload);
+            return;
+          }
+          throw new Error(body || 'HTTP ' + res.status);
+        }
+
+        verExito(payload);
+      } catch (err) {
+        console.error('[Lendix] Error guardando la solicitud:', err);
+        showError('No pudimos enviar tu solicitud. Intenta de nuevo o escribenos a ' + contactEmail);
+      } finally {
+        setLoading(false);
+      }
+    });
+  })();
+</script>
