@@ -80,8 +80,7 @@
 </div>
 
 <script>
-  import { createClient } from '@supabase/supabase-js';
-  import { initSessionFromCookies } from '../lib/supabase';
+  import { supabase, initSessionFromCookies } from '../lib/supabase';
 
   let isAuthenticated = false;
 
@@ -237,24 +236,12 @@
         return;
       }
       
-      const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-      const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseKey) {
-        console.error('Missing Supabase env vars');
-        alert('Error de configuración. Intenta nuevamente.');
-        return;
-      }
-      
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      // Loading state UI
       submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
       const originalHTML = submitBtn.innerHTML;
       submitBtn.innerHTML = '<span class="inline-block w-5 h-5 border-2 border-slate-300 border-t-ink rounded-full animate-spin mr-2"></span><span>Conectando...</span>';
       
       const siteUrl = window.location.origin;
-      
+
       try {
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
