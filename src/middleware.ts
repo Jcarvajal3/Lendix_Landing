@@ -12,79 +12,88 @@ const PROTECTED_ROUTES = ['/mi-cuenta'];
 const ADMIN_PREFIX = '/admin';
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  // Inicializar locals
-  context.locals.user = null;
-  context.locals.userProfile = null;
+  try {
+    // Inicializar locals
+    context.locals.user = null;
+    context.locals.userProfile = null;
 
-  const accessToken = context.cookies.get('sb-access-token')?.value;
-  const refreshToken = context.cookies.get('sb-refresh-token')?.value;
+    const accessToken = context.cookies.get('sb-access-token')?.value;
+    const refreshToken = context.cookies.get('sb-refresh-token')?.value;
 
-  if (accessToken) {
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    });
-
-    // Verificar que el token es válido
-    const { data: { user }, error } = await supabase.auth.getUser();
-
-    if (user) {
-      context.locals.user = user;
-    } else if (refreshToken && error) {
-      // Token expirado, intentar renovar
-      const freshClient = createClient(supabaseUrl, supabaseKey);
-      const { data } = await freshClient.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
-
-      if (data.session && data.user) {
-        context.locals.user = data.user;
-
-        // Actualizar cookies con tokens renovados
-        const cookieOpts = getSecureCookieOptions(import.meta.env.PROD);
-        context.cookies.set('sb-access-token', data.session.access_token, {
-          ...cookieOpts,
-          maxAge: 60 * 60, // 1 hora
+    if (accessToken) {
+      try {
+        const supabase = createClient(supabaseUrl, supabaseKey, {
+          global: { headers: { Authorization: `Bearer ${accessToken}` } },
         });
-        context.cookies.set('sb-refresh-token', data.session.refresh_token, {
-          ...cookieOpts,
-          maxAge: 60 * 60 * 24 * 30, // 30 días
-        });
+
+        // Verificar que el token es válido
+        const { data: { user }, error } = await supabase.auth.getUser();
+
+        if (user) {
+          context.locals.user = user;
+        } else if (refreshToken && error) {
+          // Token expirado, intentar renovar
+          const freshClient = createClient(supabaseUrl, supabaseKey);
+          const { data } = await freshClient.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (data.session && data.user) {
+            context.locals.user = data.user;
+
+            // Actualizar cookies con tokens renovados
+            const cookieOpts = getSecureCookieOptions(import.meta.env.PROD);
+            context.cookies.set('sb-access-token', data.session.access_token, {
+              ...cookieOpts,
+              maxAge: 60 * 60, // 1 hora
+            });
+            context.cookies.set('sb-refresh-token', data.session.refresh_token, {
+              ...cookieOpts,
+              maxAge: 60 * 60 * 24 * 30, // 30 días
+            });
+          }
+        }
+      } catch (authErr) {
+        console.error('[Middleware] Auth check failed:', authErr);
       }
     }
-  }
 
-  const pathname = context.url.pathname.replace(/\/$/, '') || '/';
+    const pathname = context.url.pathname.replace(/\/$/, '') || '/';
 
-  // ─── Protección de rutas autenticadas ──────────────────────────────
-  if (PROTECTED_ROUTES.includes(pathname) && !context.locals.user) {
-    return context.redirect('/');
-  }
-
-  // ─── Protección de rutas admin (server-side, ANTES de generar HTML) ─
-  if (pathname.startsWith(ADMIN_PREFIX) || pathname.startsWith('/api/admin')) {
-    // 1. Sin sesión → redirect inmediato
-    if (!context.locals.user) {
+    // ─── Protección de rutas autenticadas ──────────────────────────────
+    if (PROTECTED_ROUTES.includes(pathname) && !context.locals.user) {
       return context.redirect('/');
     }
 
-    // 2. Verificar rol en la base de datos usando service_role key
-    //    Import dinámico para evitar cargar el módulo en rutas no-admin
-    const { getUserProfile } = await import('./lib/supabase-admin');
-    const profile = await getUserProfile(context.locals.user.id);
+    // ─── Protección de rutas admin (server-side, ANTES de generar HTML) ─
+    if (pathname.startsWith(ADMIN_PREFIX) || pathname.startsWith('/api/admin')) {
+      // 1. Sin sesión → redirect inmediato
+      if (!context.locals.user) {
+        return context.redirect('/');
+      }
 
-    // 3. Sin perfil o rol insuficiente → redirect con 403
-    if (!profile || (profile.role !== 'admin' && profile.role !== 'superadmin')) {
-      return new Response(null, {
-        status: 302,
-        headers: { Location: '/' },
-      });
+      // 2. Verificar rol en la base de datos usando service_role key
+      //    Import dinámico para evitar cargar el módulo en rutas no-admin
+      const { getUserProfile } = await import('./lib/supabase-admin');
+      const profile = await getUserProfile(context.locals.user.id);
+
+      // 3. Sin perfil o rol insuficiente → redirect con 403
+      if (!profile || (profile.role !== 'admin' && profile.role !== 'superadmin')) {
+        return new Response(null, {
+          status: 302,
+          headers: { Location: '/' },
+        });
+      }
+
+      // 4. Inyectar perfil para uso en las páginas admin
+      context.locals.userProfile = profile;
     }
 
-    // 4. Inyectar perfil para uso en las páginas admin
-    context.locals.userProfile = profile;
+    return next();
+  } catch (err) {
+    console.error('[Middleware] FATAL ERROR rendering', context.url.pathname, err);
+    return new Response('Internal Server Error', { status: 500 });
   }
-
-  return next();
 });
 
