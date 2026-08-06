@@ -13,10 +13,10 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-const serviceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const serviceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key';
 
-if (!serviceRoleKey) {
+if (!import.meta.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.error('[supabase-admin] SUPABASE_SERVICE_ROLE_KEY is not set. Admin features will not work.');
 }
 
