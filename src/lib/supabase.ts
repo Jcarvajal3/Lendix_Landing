@@ -1,10 +1,25 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseKey = process.env.PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
 
 /** Cliente Supabase compartido (para uso general). */
-export const supabase = createClient(supabaseUrl, supabaseKey);
+let _supabase: SupabaseClient | null = null;
+export function getSupabase(): SupabaseClient {
+  if (!_supabase) {
+    _supabase = createClient(
+      process.env.PUBLIC_SUPABASE_URL || supabaseUrl,
+      process.env.PUBLIC_SUPABASE_ANON_KEY || supabaseKey
+    );
+  }
+  return _supabase;
+}
+// Backward-compatible export — lazy init to avoid crashing at module load
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    return (getSupabase() as any)[prop];
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Cookie helpers

@@ -13,18 +13,30 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const serviceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key';
+/** Cliente Supabase admin con service_role — bypasea RLS. Lazy-initialized. */
+let _supabaseAdmin: SupabaseClient | null = null;
+function getSupabaseAdmin(): SupabaseClient {
+  if (!_supabaseAdmin) {
+    const url = process.env.PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key';
 
-if (!import.meta.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('[supabase-admin] SUPABASE_SERVICE_ROLE_KEY is not set. Admin features will not work.');
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('[supabase-admin] SUPABASE_SERVICE_ROLE_KEY is not set. Admin features will not work.');
+    }
+
+    _supabaseAdmin = createClient(url, key, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+  }
+  return _supabaseAdmin;
 }
 
-/** Cliente Supabase admin con service_role — bypasea RLS. */
-export const supabaseAdmin: SupabaseClient = createClient(supabaseUrl, serviceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
+export const supabaseAdmin: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    return (getSupabaseAdmin() as any)[prop];
   },
 });
 
