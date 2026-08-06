@@ -2,9 +2,7 @@
 export const prerender = false;
 
 import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.PUBLIC_SUPABASE_ANON_KEY;
+import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseKey } from '../../lib/env';
 
 const accessToken = Astro.cookies.get('sb-access-token')?.value;
 

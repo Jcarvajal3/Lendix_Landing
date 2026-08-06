@@ -4,15 +4,13 @@ export const prerender = false;
 import Base from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
 import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseKey } from '../lib/env';
 
 const user = Astro.locals.user;
 if (!user) {
   return Astro.redirect('/');
 }
 const accessToken = Astro.cookies.get('sb-access-token')?.value;
-
-const supabaseUrl = process.env.PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.PUBLIC_SUPABASE_ANON_KEY;
 
 const supabase = createClient(
   supabaseUrl,

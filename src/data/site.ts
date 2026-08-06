@@ -8,7 +8,9 @@
  * Formato: solo digitos con codigo de pais, sin +, espacios ni guiones.
  * Ejemplo Venezuela: 584121234567
  */
-const raw = process.env.PUBLIC_WHATSAPP ?? '';
+import { WHATSAPP } from '../lib/env';
+
+const raw = WHATSAPP;
 
 /** Numero listo para wa.me, o '' si todavia no esta configurado. */
 export const whatsappNumber = raw.replace(/\D/g, '');

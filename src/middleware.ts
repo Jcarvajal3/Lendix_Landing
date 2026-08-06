@@ -1,9 +1,10 @@
 import { defineMiddleware } from 'astro:middleware';
 import { createClient } from '@supabase/supabase-js';
 import { getSecureCookieOptions } from './lib/supabase';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './lib/env';
 
-const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseKey = process.env.PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+const supabaseUrl = SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseKey = SUPABASE_ANON_KEY || 'placeholder-anon-key';
 
 /** Rutas que requieren autenticación — redirigir a / si no hay sesión. */
 const PROTECTED_ROUTES = ['/mi-cuenta'];

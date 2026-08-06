@@ -1,16 +1,24 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './env';
 
-const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseKey = process.env.PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+// Este modulo se importa desde <script> de componentes, asi que termina en el
+// bundle del cliente: las credenciales tienen que salir de `import.meta.env`
+// (ver src/lib/env.ts). Usar `process.env` aqui las deja vacias en el navegador.
+const supabaseUrl = SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseKey = SUPABASE_ANON_KEY || 'placeholder-anon-key';
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error(
+    '[supabase] Faltan PUBLIC_SUPABASE_URL / PUBLIC_SUPABASE_ANON_KEY. ' +
+      'En local revisa Landing/.env; en Vercel, Settings -> Environment Variables (y redeploy).'
+  );
+}
 
 /** Cliente Supabase compartido (para uso general). */
 let _supabase: SupabaseClient | null = null;
 export function getSupabase(): SupabaseClient {
   if (!_supabase) {
-    _supabase = createClient(
-      process.env.PUBLIC_SUPABASE_URL || supabaseUrl,
-      process.env.PUBLIC_SUPABASE_ANON_KEY || supabaseKey
-    );
+    _supabase = createClient(supabaseUrl, supabaseKey);
   }
   return _supabase;
 }

@@ -2,6 +2,7 @@
 export const prerender = false;
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { supabaseAdmin } from '../../lib/supabase-admin';
+import { SUPABASE_URL } from '../../lib/env';
 
 // Fetch all rental applications
 const { data: rentals, error: rentalsError } = await supabaseAdmin
@@ -62,7 +63,7 @@ function getStatusLabel(status: string) {
   }
 }
 
-const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || '';
+const supabaseUrl = SUPABASE_URL;
 const accessToken = Astro.cookies.get('sb-access-token')?.value || '';
 ---
 <AdminLayout title="Gestión de Rentas" activePage="rentas">

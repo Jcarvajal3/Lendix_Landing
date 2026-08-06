@@ -12,15 +12,16 @@
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from './env';
 
 /** Cliente Supabase admin con service_role — bypasea RLS. Lazy-initialized. */
 let _supabaseAdmin: SupabaseClient | null = null;
 function getSupabaseAdmin(): SupabaseClient {
   if (!_supabaseAdmin) {
-    const url = process.env.PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key';
+    const url = SUPABASE_URL || 'https://placeholder.supabase.co';
+    const key = SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key';
 
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (!SUPABASE_SERVICE_ROLE_KEY) {
       console.error('[supabase-admin] SUPABASE_SERVICE_ROLE_KEY is not set. Admin features will not work.');
     }
 
