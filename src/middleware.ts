@@ -20,43 +20,37 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const refreshToken = context.cookies.get('sb-refresh-token')?.value;
 
   if (accessToken) {
-    try {
-      const supabase = createClient(supabaseUrl, supabaseKey, {
-        global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    });
+
+    // Verificar que el token es válido
+    const { data: { user }, error } = await supabase.auth.getUser();
+
+    if (user) {
+      context.locals.user = user;
+    } else if (refreshToken && error) {
+      // Token expirado, intentar renovar
+      const freshClient = createClient(supabaseUrl, supabaseKey);
+      const { data } = await freshClient.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
       });
 
-      // Verificar que el token es válido
-      const { data: { user }, error } = await supabase.auth.getUser();
+      if (data.session && data.user) {
+        context.locals.user = data.user;
 
-      if (user) {
-        context.locals.user = user;
-      } else if (refreshToken && error) {
-        // Token expirado, intentar renovar
-        const freshClient = createClient(supabaseUrl, supabaseKey);
-        const { data } = await freshClient.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
+        // Actualizar cookies con tokens renovados
+        const cookieOpts = getSecureCookieOptions(import.meta.env.PROD);
+        context.cookies.set('sb-access-token', data.session.access_token, {
+          ...cookieOpts,
+          maxAge: 60 * 60, // 1 hora
         });
-
-        if (data.session && data.user) {
-          context.locals.user = data.user;
-
-          // Actualizar cookies con tokens renovados
-          const cookieOpts = getSecureCookieOptions(import.meta.env.PROD);
-          context.cookies.set('sb-access-token', data.session.access_token, {
-            ...cookieOpts,
-            maxAge: 60 * 60, // 1 hora
-          });
-          context.cookies.set('sb-refresh-token', data.session.refresh_token, {
-            ...cookieOpts,
-            maxAge: 60 * 60 * 24 * 30, // 30 días
-          });
-        }
+        context.cookies.set('sb-refresh-token', data.session.refresh_token, {
+          ...cookieOpts,
+          maxAge: 60 * 60 * 24 * 30, // 30 días
+        });
       }
-    } catch (authError) {
-      // Si Supabase no responde (URL inválida, red caída, etc.), ignorar el error
-      // y tratar al usuario como no autenticado. Nunca crashear la app.
-      console.error('[Middleware] Auth check failed:', authError);
     }
   }
 

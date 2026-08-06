@@ -1,103 +1,37 @@
 ---
 export const prerender = false;
+
+import { createClient } from '@supabase/supabase-js';
+import { getSecureCookieOptions } from '../../lib/supabase';
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+const code = Astro.url.searchParams.get('code');
+
+// El redirect target puede venir como query param (?next=/mi-cuenta)
+// Por defecto redirige a completar-registro (flujo de renta)
+const next = Astro.url.searchParams.get('next') || '/completar-registro';
+
+if (code) {
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (!error && data.session) {
+    const { access_token, refresh_token } = data.session;
+    const cookieOpts = getSecureCookieOptions(import.meta.env.PROD);
+
+    Astro.cookies.set('sb-access-token', access_token, {
+      ...cookieOpts,
+      maxAge: 60 * 60, // 1 hora
+    });
+
+    Astro.cookies.set('sb-refresh-token', refresh_token, {
+      ...cookieOpts,
+      maxAge: 60 * 60 * 24 * 30, // 30 días
+    });
+  }
+}
+
+return Astro.redirect(next);
 ---
-
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Autenticando... | Lendix</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      background-color: #FAF8F5;
-      color: #1A1A1A;
-    }
-    .card {
-      text-align: center;
-      padding: 40px 32px;
-      background: white;
-      border-radius: 24px;
-      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
-      max-width: 360px;
-      width: 90%;
-    }
-    .spinner {
-      width: 44px;
-      height: 44px;
-      border: 3.5px solid #F3F4F6;
-      border-top-color: #FF5A36;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 20px;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    p {
-      margin: 0;
-      font-size: 0.95rem;
-      font-weight: 500;
-      color: #4B5563;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="spinner"></div>
-    <p id="status-text">Completando inicio de sesión...</p>
-  </div>
-
-  <script>
-    import { supabase } from '../../lib/supabase';
-
-    async function handleAuthCallback() {
-      const statusText = document.getElementById('status-text');
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get('code');
-      const nextParam = params.get('next') || '/completar-registro';
-
-      if (!code) {
-        window.location.href = nextParam;
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-
-        if (error) {
-          console.error('[Auth Callback Error]', error);
-          if (statusText) statusText.textContent = 'Ocurrió un error al autenticar. Redirigiendo...';
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 1500);
-          return;
-        }
-
-        if (data.session) {
-          const isProd = window.location.protocol === 'https:';
-          const secureFlag = isProd ? '; Secure' : '';
-          
-          document.cookie = `sb-access-token=${encodeURIComponent(data.session.access_token)}; path=/; max-age=3600; SameSite=Lax${secureFlag}`;
-          document.cookie = `sb-refresh-token=${encodeURIComponent(data.session.refresh_token)}; path=/; max-age=${3600 * 24 * 30}; SameSite=Lax${secureFlag}`;
-        }
-
-        window.location.href = nextParam;
-
-      } catch (err) {
-        console.error('[Auth Callback Exception]', err);
-        window.location.href = '/';
-      }
-    }
-
-    handleAuthCallback();
-  </script>
-</body>
-</html>
-
