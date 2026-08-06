@@ -1,5 +1,12 @@
 @import 'tailwindcss';
 
+/* Estilos del dashboard admin (.admin-sidebar, .kpi-card, .badge-*, etc).
+   Vive en un archivo aparte por organizacion, pero se importa aqui adentro
+   —no via un `import` de JS independiente en AdminLayout.astro— porque el
+   build de produccion descarta en silencio una segunda raiz/import de CSS.
+   Ver la nota al inicio de admin.css. */
+@import './admin.css';
+
 /* ==========================================================================
    Lendix — Manual de marca
    Naranja / amarillo sobre crema, blanco y grises. Mucho espacio negativo.

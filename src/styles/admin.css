@@ -1,40 +1,19 @@
 /* ==========================================================================
    Lendix Admin Dashboard — Estilos específicos
+
+   OJO: este archivo NO hace su propio `@import 'tailwindcss'`. Astro/Vite
+   solo bundlea de forma confiable la PRIMERA raiz de Tailwind que encuentra
+   (comprobado: un segundo `@import 'tailwindcss'` independiente, o incluso
+   un segundo import de CSS plano desde el mismo componente, se descarta en
+   silencio en el build de produccion — el admin se quedaba sin CSS mientras
+   `astro dev` lo disimulaba). Por eso este archivo se importa como PARCIAL
+   de global.css (ver `@import './admin.css'` ahi) y no se importa directo
+   desde AdminLayout.astro.
    ========================================================================== */
 
-@import 'tailwindcss';
-
-/* Reutilizamos el tema de la landing */
+/* Tokens exclusivos del admin — los de marca (flame, sun, cream, ink...)
+   ya estan declarados en el @theme de global.css. */
 @theme {
-  --color-flame-50: #fff7ed;
-  --color-flame-100: #ffedd5;
-  --color-flame-200: #fed7aa;
-  --color-flame-300: #fdba74;
-  --color-flame-400: #ff9142;
-  --color-flame-500: #ff6b2c;
-  --color-flame-600: #f2530f;
-  --color-flame-700: #c93d09;
-  --color-flame-800: #9a3212;
-
-  --color-sun-100: #fff4d1;
-  --color-sun-200: #ffe8a3;
-  --color-sun-300: #ffd968;
-  --color-sun-400: #ffc94a;
-  --color-sun-500: #f9b208;
-  --color-sun-600: #d99206;
-
-  --color-cream: #fdf3e6;
-  --color-cream-deep: #fbead4;
-
-  --color-ink: #131110;
-  --color-ink-soft: #3d3835;
-  --color-slate-muted: #7b736d;
-  --color-hairline: #e9e3dc;
-
-  --font-display: 'Space Grotesk Variable', 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
-  --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
-
-  /* Admin-specific tokens */
   --color-sidebar: #131110;
   --color-sidebar-hover: #1f1d1b;
   --color-sidebar-active: #2a2724;
@@ -50,10 +29,6 @@
   --sidebar-width: 17rem;
   --sidebar-collapsed: 4.5rem;
   --topbar-height: 4rem;
-
-  --radius-2xl: 1.25rem;
-  --radius-3xl: 1.75rem;
-  --radius-4xl: 2.25rem;
 }
 
 /* ==========================================================================
