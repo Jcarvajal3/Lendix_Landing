@@ -73,16 +73,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (status === 'approved' && data) {
       const payments = [];
       const startDate = new Date();
+      const totalInstallments = data.term_months * 2; // quincenal: 2 cuotas por mes de plan
 
-      for (let i = 1; i <= data.term_months; i++) {
+      for (let i = 1; i <= totalInstallments; i++) {
         const dueDate = new Date(startDate);
-        dueDate.setMonth(dueDate.getMonth() + i);
+        dueDate.setDate(dueDate.getDate() + i * 15);
 
         payments.push({
           rental_id: data.id,
           user_id: data.user_id,
-          month_number: i,
-          amount: data.monthly_rent,
+          installment_number: i,
+          amount: data.biweekly_rent,
           status: 'pending',
           due_date: dueDate.toISOString().split('T')[0],
         });

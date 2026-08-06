@@ -73,11 +73,11 @@ applications.forEach(app => {
       slug: app.product_slug,
       totalRentals: 0,
       revenueGenerated: 0,
-      avgMonthlyRent: 0
+      avgBiweeklyRent: 0
     };
   }
   productStats[app.product_slug].totalRentals += 1;
-  productStats[app.product_slug].avgMonthlyRent += Number(app.monthly_rent || 0);
+  productStats[app.product_slug].avgBiweeklyRent += Number(app.biweekly_rent || 0);
 });
 
 // Calculate revenue per product (join payments -> applications)
@@ -95,7 +95,7 @@ paidPayments.forEach(p => {
 
 const productsArray = Object.values(productStats).map(p => ({
   ...p,
-  avgMonthlyRent: p.totalRentals > 0 ? p.avgMonthlyRent / p.totalRentals : 0
+  avgBiweeklyRent: p.totalRentals > 0 ? p.avgBiweeklyRent / p.totalRentals : 0
 })).sort((a, b) => b.totalRentals - a.totalRentals);
 
 const mostRentedProducts = [...productsArray].slice(0, 3);
@@ -275,7 +275,7 @@ const getTrendClass = (val, isPositiveGood = true) => {
             <tr>
               <th>Producto</th>
               <th class="text-right">Total Rentas</th>
-              <th class="text-right">Renta Mensual Prom.</th>
+              <th class="text-right">Renta Quincenal Prom.</th>
               <th class="text-right">Ingresos Generados</th>
             </tr>
           </thead>
@@ -284,7 +284,7 @@ const getTrendClass = (val, isPositiveGood = true) => {
               <tr>
                 <td class="font-medium">{p.name}</td>
                 <td class="text-right">{formatNumber(p.totalRentals)}</td>
-                <td class="text-right">{formatCurrency(p.avgMonthlyRent)}</td>
+                <td class="text-right">{formatCurrency(p.avgBiweeklyRent)}</td>
                 <td class="text-right font-medium text-green-700">{formatCurrency(p.revenueGenerated)}</td>
               </tr>
             ))}

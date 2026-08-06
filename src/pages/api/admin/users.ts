@@ -64,11 +64,11 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       const [rentalsResult, paymentsResult] = await Promise.all([
         supabaseAdmin
           .from('rental_applications')
-          .select('id, product_name, status, monthly_rent, term_months, created_at')
+          .select('id, product_name, status, biweekly_rent, term_months, created_at')
           .in('user_id', userIds),
         supabaseAdmin
           .from('rental_payments')
-          .select('id, user_id, amount, status, due_date, month_number')
+          .select('id, user_id, amount, status, due_date, installment_number')
           .in('user_id', userIds)
           .eq('status', 'pending'),
       ]);

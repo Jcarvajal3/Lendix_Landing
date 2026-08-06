@@ -5,7 +5,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import { products, firstMonthSaving } from '../../data/products';
 
 const totalProducts = products.length;
-const avgMonthly = Math.round(products.reduce((acc, p) => acc + p.monthly, 0) / (totalProducts || 1));
+const avgBiweekly = Math.round(products.reduce((acc, p) => acc + p.biweekly, 0) / (totalProducts || 1));
 
 const categories = [...new Set(products.map(p => p.category))];
 ---
@@ -14,7 +14,7 @@ const categories = [...new Set(products.map(p => p.category))];
     <div>
       <h1 class="text-2xl font-display font-bold text-ink">Catálogo de Productos</h1>
       <p class="text-sm text-slate-muted mt-1">
-        {totalProducts} productos listados · Precio promedio: ${avgMonthly}/mes
+        {totalProducts} productos listados · Precio promedio: ${avgBiweekly}/quincena
       </p>
     </div>
   </div>
@@ -59,7 +59,7 @@ const categories = [...new Set(products.map(p => p.category))];
         <thead>
           <tr>
             <th>Producto</th>
-            <th>Precio Mensual</th>
+            <th>Precio Quincenal</th>
             <th>Precio Retail</th>
             <th>Ahorro 1er Mes</th>
             <th>Disponibilidad</th>
@@ -81,8 +81,8 @@ const categories = [...new Set(products.map(p => p.category))];
               </td>
               
               <!-- Display cells -->
-              <td class="view-cell" data-field="monthly">
-                <span class="font-semibold text-ink">${p.monthly}</span><span class="text-xs text-slate-muted">/mes</span>
+              <td class="view-cell" data-field="biweekly">
+                <span class="font-semibold text-ink">${p.biweekly}</span><span class="text-xs text-slate-muted">/quincena</span>
               </td>
               <td class="view-cell" data-field="retail">
                 ${p.retail}
@@ -95,7 +95,7 @@ const categories = [...new Set(products.map(p => p.category))];
               <td class="edit-cell hidden">
                 <div class="flex items-center gap-1">
                   <span class="text-slate-muted">$</span>
-                  <input type="number" class="w-20 px-2 py-1 text-sm border border-hairline rounded focus:border-flame-500 outline-none edit-monthly" value={p.monthly} data-original={p.monthly} />
+                  <input type="number" class="w-20 px-2 py-1 text-sm border border-hairline rounded focus:border-flame-500 outline-none edit-biweekly" value={p.biweekly} data-original={p.biweekly} />
                 </div>
               </td>
               <td class="edit-cell hidden">
@@ -191,11 +191,11 @@ const categories = [...new Set(products.map(p => p.category))];
         const viewActions = row.querySelector('.view-actions');
         const editActions = row.querySelector('.edit-actions');
         
-        const inputMonthly = row.querySelector('.edit-monthly');
+        const inputBiweekly = row.querySelector('.edit-biweekly');
         const inputRetail = row.querySelector('.edit-retail');
 
         const savingsCell = row.querySelector('.savings-cell span');
-        const monthlyViewCell = row.querySelector('[data-field="monthly"]');
+        const biweeklyViewCell = row.querySelector('[data-field="biweekly"]');
         const retailViewCell = row.querySelector('[data-field="retail"]');
 
         function toggleEdit(editing) {
@@ -218,7 +218,7 @@ const categories = [...new Set(products.map(p => p.category))];
         
         if (btnCancel) {
           btnCancel.addEventListener('click', () => {
-            inputMonthly.value = inputMonthly.dataset.original;
+            inputBiweekly.value = inputBiweekly.dataset.original;
             inputRetail.value = inputRetail.dataset.original;
             toggleEdit(false);
           });
@@ -227,9 +227,9 @@ const categories = [...new Set(products.map(p => p.category))];
         if (btnSave) {
           btnSave.addEventListener('click', async () => {
             const slug = btnSave.dataset.slug;
-            const newMonthly = parseInt(inputMonthly.value, 10) || 0;
+            const newBiweekly = parseInt(inputBiweekly.value, 10) || 0;
             const newRetail = parseInt(inputRetail.value, 10) || 0;
-            
+
             btnSave.disabled = true;
             btnSave.textContent = '...';
 
@@ -237,18 +237,18 @@ const categories = [...new Set(products.map(p => p.category))];
               const res = await fetch('/api/admin/update-product-price', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug, monthly: newMonthly, retail: newRetail })
+                body: JSON.stringify({ slug, biweekly: newBiweekly, retail: newRetail })
               });
 
               if (!res.ok) throw new Error('Error al guardar');
-              
-              inputMonthly.dataset.original = newMonthly;
+
+              inputBiweekly.dataset.original = newBiweekly;
               inputRetail.dataset.original = newRetail;
-              
-              monthlyViewCell.innerHTML = `<span class="font-semibold text-ink">$${newMonthly}</span><span class="text-xs text-slate-muted">/mes</span>`;
+
+              biweeklyViewCell.innerHTML = `<span class="font-semibold text-ink">$${newBiweekly}</span><span class="text-xs text-slate-muted">/quincena</span>`;
               retailViewCell.textContent = `$${newRetail}`;
-              savingsCell.textContent = `$${newRetail - newMonthly}`;
-              
+              savingsCell.textContent = `$${newRetail - newBiweekly * 2}`;
+
               toggleEdit(false);
             } catch (err) {
               alert('Hubo un error al actualizar el precio. Verifica tu conexión.');

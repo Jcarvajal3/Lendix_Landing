@@ -38,23 +38,23 @@
             <input type="radio" name="rent_plan" value="6" class="peer sr-only" checked>
             <span class="text-sm font-bold text-ink mb-1">Plan Libre (6m)</span>
             <span class="text-xs text-ink-soft mb-2">Flexibilidad total</span>
-            <span class="text-lg font-bold text-ink mt-auto block" id="price-6m">$0/mes</span>
+            <span class="text-lg font-bold text-ink mt-auto block" id="price-6m">$0/quincena</span>
           </label>
-          
+
           <!-- 12 Months / Plan Anual -->
           <label class="relative flex flex-col p-4 border-2 border-slate-muted rounded-2xl cursor-pointer hover:border-flame-300 transition-colors has-[:checked]:border-flame-500 has-[:checked]:bg-flame-50/50">
             <input type="radio" name="rent_plan" value="12" class="peer sr-only">
             <span class="text-sm font-bold text-ink mb-1">Plan Anual (12m)</span>
             <span class="text-xs text-ink-soft mb-2">El mejor precio</span>
-            <span class="text-lg font-bold text-ink mt-auto block" id="price-12m">$0/mes</span>
+            <span class="text-lg font-bold text-ink mt-auto block" id="price-12m">$0/quincena</span>
           </label>
         </div>
       </div>
 
       <div class="bg-cream p-6 rounded-3xl mb-6 text-center border border-slate-muted/50">
-        <p class="text-sm text-ink-soft mb-1">Total a pagar hoy (1er mes):</p>
+        <p class="text-sm text-ink-soft mb-1">Total a pagar hoy (1ra quincena):</p>
         <div class="text-4xl font-display font-black text-ink tracking-tight" id="rent-modal-total">
-          $0<span class="text-xl text-ink-soft font-medium">/mes</span>
+          $0<span class="text-xl text-ink-soft font-medium">/quincena</span>
         </div>
       </div>
 
@@ -94,7 +94,7 @@
   let currentProduct = {
     slug: '',
     name: '',
-    monthly: 0
+    biweekly: 0
   };
   
   // Elements
@@ -142,21 +142,21 @@
     const selected = document.querySelector<HTMLInputElement>('input[name="rent_plan"]:checked');
     if (selected) {
       const months = parseInt(selected.value, 10);
-      const price = getPrice(currentProduct.monthly, months);
-      total.innerHTML = `${formatMoney(price)}<span class="text-xl text-ink-soft font-medium">/mes</span>`;
+      const price = getPrice(currentProduct.biweekly, months);
+      total.innerHTML = `${formatMoney(price)}<span class="text-xl text-ink-soft font-medium">/quincena</span>`;
     }
   };
-  
+
   // Open modal
-  const openModal = (slug: string, name: string, monthly: number) => {
+  const openModal = (slug: string, name: string, biweekly: number) => {
     if (!modal || !card || !title || !price6m || !price12m) return;
-    
-    currentProduct = { slug, name, monthly };
-    
+
+    currentProduct = { slug, name, biweekly };
+
     // Update texts
     title.textContent = `Obtén tu ${name}`;
-    price6m.textContent = `${formatMoney(getPrice(monthly, 6))}/mes`;
-    price12m.textContent = `${formatMoney(getPrice(monthly, 12))}/mes`;
+    price6m.textContent = `${formatMoney(getPrice(biweekly, 6))}/quincena`;
+    price12m.textContent = `${formatMoney(getPrice(biweekly, 12))}/quincena`;
     
     // Reset selection to 6m by default
     const defaultRadio = document.querySelector<HTMLInputElement>('input[name="rent_plan"][value="6"]');
@@ -198,10 +198,10 @@
     if (btn) {
       const slug = btn.getAttribute('data-product-slug');
       const name = btn.getAttribute('data-product-name');
-      const monthlyStr = btn.getAttribute('data-product-monthly');
-      
-      if (slug && name && monthlyStr) {
-        openModal(slug, name, parseInt(monthlyStr, 10));
+      const biweeklyStr = btn.getAttribute('data-product-biweekly');
+
+      if (slug && name && biweeklyStr) {
+        openModal(slug, name, parseInt(biweeklyStr, 10));
       }
     }
   });
@@ -224,7 +224,7 @@
       if (!selected) return;
       
       const termMonths = parseInt(selected.value, 10);
-      const monthlyRent = getPrice(currentProduct.monthly, termMonths);
+      const biweeklyRent = getPrice(currentProduct.biweekly, termMonths);
 
       // Guardar la seleccion ANTES de salir a Google, para poder mostrarla
       // en /completar-registro cuando el usuario regrese.
@@ -232,7 +232,7 @@
         product_slug: currentProduct.slug,
         product_name: currentProduct.name,
         term_months: termMonths,
-        monthly_rent: monthlyRent
+        biweekly_rent: biweeklyRent
       });
 
       if (isAuthenticated) {

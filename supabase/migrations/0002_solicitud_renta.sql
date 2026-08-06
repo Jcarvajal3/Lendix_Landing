@@ -53,7 +53,12 @@ comment on column public.waitlist_lead.precio_mes is
   'Renta mensual en USD que el cliente vio al solicitar. Referencial.';
 
 -- 4. La vista de demanda sigue funcionando, pero ahora tambien por plan ------
-create or replace view public.waitlist_demanda as
+-- CREATE OR REPLACE VIEW no puede renombrar columnas existentes (aqui
+-- "leads" de la 0001 pasa a llamarse "solicitudes"), asi que hay que
+-- soltarla primero.
+drop view if exists public.waitlist_demanda;
+
+create view public.waitlist_demanda as
   select
     producto_interes,
     count(*)                                           as solicitudes,

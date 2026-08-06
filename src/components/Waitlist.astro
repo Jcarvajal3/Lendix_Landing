@@ -1,6 +1,4 @@
 ---
-import { products } from '../data/products';
-
 import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseKey } from '../lib/env';
 ---
 
@@ -90,24 +88,8 @@ import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseKey } from '.
             </div>
 
             <div>
-              <label for="lead-producto" class="mb-1.5 block text-sm font-semibold text-ink">
-                Que quieres rentar primero?
-              </label>
-              <select
-                id="lead-producto"
-                name="producto"
-                required
-                class="w-full appearance-none rounded-2xl border border-hairline bg-cream/50 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22m5%208%205%205%205-5%22%20stroke%3D%22%237b736d%22%20stroke-width%3D%221.7%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:1.25rem] bg-[position:right_1rem_center] bg-no-repeat px-4 py-3.5 pr-11 text-[0.95rem] text-ink transition-colors focus:border-flame-400 focus:bg-white focus:outline-none"
-              >
-                <option value="">Selecciona una opcion</option>
-                {products.map((p) => <option value={p.name}>{p.name}</option>)}
-                <option value="Otro">Otro producto (lo escribo abajo)</option>
-              </select>
-            </div>
-
-            <div>
               <label for="lead-mensaje" class="mb-1.5 block text-sm font-semibold text-ink">
-                Que otro producto te gustaria? <span class="font-normal text-slate-muted">(opcional)</span>
+                Que producto te gustaria rentar? <span class="font-normal text-slate-muted">(opcional)</span>
               </label>
               <textarea
                 id="lead-mensaje"
@@ -235,19 +217,19 @@ import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseKey } from '.
 
       const nombre = String(data.get('nombre') || '').trim();
       const email = String(data.get('email') || '').trim();
-      const producto = String(data.get('producto') || '').trim();
 
       if (!nombre) return showError('Escribe tu nombre para poder saludarte bien.');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return showError('Revisa tu correo, parece que tiene un error.');
-      if (!producto) return showError('Dinos que producto te interesa mas.');
+
+      const mensaje = String(data.get('mensaje') || '').trim();
 
       const payload = {
         nombre,
         email: email.toLowerCase(),
         telefono: String(data.get('telefono') || '').trim() || null,
         ciudad: String(data.get('ciudad') || '').trim() || null,
-        producto_interes: producto,
-        mensaje: String(data.get('mensaje') || '').trim() || null,
+        producto_interes: mensaje || 'General',
+        mensaje: mensaje || null,
         ...attribution(),
       };
 

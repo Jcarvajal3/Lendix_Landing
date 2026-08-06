@@ -142,8 +142,8 @@ const paymentStatusConfig: Record<string, { label: string, classes: string }> = 
                         <p class="text-ink-soft text-sm mb-4">Plan de {rental.months} meses • Solicitado el {new Date(rental.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                         
                         <div class="flex items-baseline gap-1">
-                          <span class="font-display text-2xl font-bold text-flame-500">${rental.monthly_rent}</span>
-                          <span class="text-sm text-ink-soft font-semibold">/mes</span>
+                          <span class="font-display text-2xl font-bold text-flame-500">${rental.biweekly_rent}</span>
+                          <span class="text-sm text-ink-soft font-semibold">/quincena</span>
                         </div>
                       </div>
                       

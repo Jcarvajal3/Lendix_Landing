@@ -1,0 +1,233 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { supabaseAdmin } from '../../lib/supabase-admin';
+
+// Verify admin access
+const userProfile = Astro.locals.userProfile;
+if (!userProfile || (userProfile.role !== 'admin' && userProfile.role !== 'superadmin')) {
+  return Astro.redirect('/login');
+}
+
+// Fetch all waitlist leads
+const { data: leadsData, error: leadsError } = await supabaseAdmin
+  .from('waitlist_lead')
+  .select('*')
+  .order('created_at', { ascending: false });
+
+if (leadsError) {
+  console.error('Error fetching waitlist leads:', leadsError);
+}
+
+const leads = leadsData || [];
+
+// -------------------------------------------------------------
+// Agrupar por producto de interes: esto es la wishlist real.
+// -------------------------------------------------------------
+const demandMap = new Map<string, { producto: string; leads: number; conWhatsapp: number; ultimoLead: string }>();
+
+leads.forEach((lead) => {
+  const key = lead.producto_interes || 'Sin especificar';
+  if (!demandMap.has(key)) {
+    demandMap.set(key, { producto: key, leads: 0, conWhatsapp: 0, ultimoLead: lead.created_at });
+  }
+  const entry = demandMap.get(key)!;
+  entry.leads += 1;
+  if (lead.telefono) entry.conWhatsapp += 1;
+  if (new Date(lead.created_at) > new Date(entry.ultimoLead)) entry.ultimoLead = lead.created_at;
+});
+
+const totalLeads = leads.length;
+const demand = Array.from(demandMap.values())
+  .map((d) => ({ ...d, porcentaje: totalLeads > 0 ? (d.leads / totalLeads) * 100 : 0 }))
+  .sort((a, b) => b.leads - a.leads);
+
+const topProduct = demand[0] || null;
+const totalProductosDistintos = demand.length;
+const maxLeads = Math.max(...demand.map((d) => d.leads), 1);
+
+// Formatting helpers
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return 'N/A';
+  return new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(dateStr));
+};
+
+const statusConfig: Record<string, { label: string; classes: string }> = {
+  NEW: { label: 'Nuevo', classes: 'bg-blue-100 text-blue-800 border-blue-200' },
+  CONTACTED: { label: 'Contactado', classes: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+  CONVERTED: { label: 'Convertido', classes: 'bg-green-100 text-green-800 border-green-200' },
+  DISCARDED: { label: 'Descartado', classes: 'bg-gray-100 text-gray-800 border-gray-200' },
+};
+---
+
+<AdminLayout title="Wishlist" activePage="wishlist">
+  <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-display font-bold text-ink mb-1">Wishlist de Productos</h1>
+      <p class="text-ink/70">Que producto pide mas la gente en la lista de espera</p>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="kpi-card bg-white p-6 rounded-xl border border-ink/10 shadow-sm flex flex-col">
+      <span class="text-sm font-medium text-ink/60 mb-2">Total Leads</span>
+      <span class="text-3xl font-display font-bold text-ink">{totalLeads}</span>
+    </div>
+    <div class="kpi-card bg-white p-6 rounded-xl border border-ink/10 shadow-sm flex flex-col">
+      <span class="text-sm font-medium text-ink/60 mb-2">Productos Distintos Pedidos</span>
+      <span class="text-3xl font-display font-bold text-ink">{totalProductosDistintos}</span>
+    </div>
+    <div class="kpi-card bg-white p-6 rounded-xl border border-flame-200 bg-flame-50/50 shadow-sm flex flex-col">
+      <span class="text-sm font-medium text-flame-700 mb-2">Producto Mas Pedido</span>
+      <span class="text-xl font-display font-bold text-ink truncate" title={topProduct?.producto}>
+        {topProduct ? topProduct.producto : 'Sin datos aun'}
+      </span>
+      {topProduct && <span class="text-xs text-ink/50 mt-1">{topProduct.leads} solicitudes</span>}
+    </div>
+  </div>
+
+  <!-- Ranking de demanda -->
+  <div class="bg-white p-6 rounded-xl border border-ink/10 shadow-sm mb-8">
+    <h2 class="text-lg font-display font-semibold text-ink mb-6">Ranking de Demanda</h2>
+    {demand.length === 0 ? (
+      <p class="text-center text-ink/50 py-8">Todavia no hay leads en la lista de espera.</p>
+    ) : (
+      <div class="space-y-4">
+        {demand.map((d, i) => (
+          <div class="flex items-center gap-4">
+            <span class="w-6 text-sm font-semibold text-ink/40 shrink-0">#{i + 1}</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between mb-1 gap-2">
+                <span class="text-sm font-medium text-ink truncate" title={d.producto}>{d.producto}</span>
+                <span class="text-sm font-bold text-ink shrink-0">{d.leads} <span class="text-xs font-normal text-ink/50">({d.porcentaje.toFixed(1)}%)</span></span>
+              </div>
+              <div class="overflow-hidden h-3 rounded-full bg-neutral-100">
+                <div style={`width: ${Math.max((d.leads / maxLeads) * 100, 3)}%`} class="h-full bg-flame-500 rounded-full transition-all"></div>
+              </div>
+            </div>
+            <span class="hidden sm:block text-xs text-ink/40 shrink-0 w-24 text-right">{formatDate(d.ultimoLead)}</span>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white p-4 rounded-xl border border-ink/10 mb-6 flex flex-col sm:flex-row gap-4 shadow-sm">
+    <div class="flex-1">
+      <label for="searchInput" class="sr-only">Buscar</label>
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Buscar por producto, nombre o ciudad..."
+        class="w-full px-4 py-2 border border-ink/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-flame-500"
+      />
+    </div>
+    <div class="sm:w-64">
+      <label for="statusFilter" class="sr-only">Estado</label>
+      <select
+        id="statusFilter"
+        class="w-full px-4 py-2 border border-ink/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-flame-500 bg-white"
+      >
+        <option value="all">Todos los estados</option>
+        <option value="NEW">Nuevo</option>
+        <option value="CONTACTED">Contactado</option>
+        <option value="CONVERTED">Convertido</option>
+        <option value="DISCARDED">Descartado</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="admin-table-container bg-white rounded-xl border border-ink/10 overflow-hidden shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="admin-table w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-ink/5 border-b border-ink/10">
+            <th class="px-6 py-4 text-sm font-semibold text-ink">Producto</th>
+            <th class="px-6 py-4 text-sm font-semibold text-ink">Nombre</th>
+            <th class="px-6 py-4 text-sm font-semibold text-ink">Contacto</th>
+            <th class="px-6 py-4 text-sm font-semibold text-ink">Ciudad</th>
+            <th class="px-6 py-4 text-sm font-semibold text-ink">Mensaje</th>
+            <th class="px-6 py-4 text-sm font-semibold text-ink">Estado</th>
+            <th class="px-6 py-4 text-sm font-semibold text-ink">Fecha</th>
+          </tr>
+        </thead>
+        <tbody id="leadsTableBody">
+          {leads.length === 0 ? (
+            <tr>
+              <td colspan="7" class="px-6 py-8 text-center text-ink/50">
+                No hay leads registrados
+              </td>
+            </tr>
+          ) : (
+            leads.map((lead) => (
+              <tr
+                class="border-b border-ink/5 hover:bg-ink/5 transition-colors lead-row"
+                data-product={(lead.producto_interes || '').toLowerCase()}
+                data-name={(lead.nombre || '').toLowerCase()}
+                data-city={(lead.ciudad || '').toLowerCase()}
+                data-status={lead.status}
+              >
+                <td class="px-6 py-4 text-sm font-medium text-ink">
+                  {lead.producto_interes || 'Sin especificar'}
+                </td>
+                <td class="px-6 py-4 text-sm text-ink/80">
+                  {lead.nombre}
+                </td>
+                <td class="px-6 py-4 text-sm text-ink/80">
+                  <div>{lead.email}</div>
+                  {lead.telefono && <div class="text-xs text-ink/50">{lead.telefono}</div>}
+                </td>
+                <td class="px-6 py-4 text-sm text-ink/80">
+                  {lead.ciudad || '-'}
+                </td>
+                <td class="px-6 py-4 text-sm text-ink/60 max-w-[16rem] truncate" title={lead.mensaje || ''}>
+                  {lead.mensaje || '-'}
+                </td>
+                <td class="px-6 py-4">
+                  <span class={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusConfig[lead.status]?.classes || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+                    {statusConfig[lead.status]?.label || lead.status}
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-sm text-ink/60 whitespace-nowrap">
+                  {formatDate(lead.created_at)}
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+    const statusFilter = document.getElementById('statusFilter') as HTMLSelectElement;
+    const rows = document.querySelectorAll('.lead-row');
+
+    function filterTable() {
+      const searchTerm = searchInput.value.toLowerCase();
+      const statusValue = statusFilter.value;
+
+      rows.forEach((row) => {
+        const product = row.getAttribute('data-product') || '';
+        const name = row.getAttribute('data-name') || '';
+        const city = row.getAttribute('data-city') || '';
+        const status = row.getAttribute('data-status') || '';
+
+        const matchesSearch = product.includes(searchTerm) || name.includes(searchTerm) || city.includes(searchTerm);
+        const matchesStatus = statusValue === 'all' || status === statusValue;
+
+        (row as HTMLElement).style.display = matchesSearch && matchesStatus ? '' : 'none';
+      });
+    }
+
+    if (searchInput) searchInput.addEventListener('input', filterTable);
+    if (statusFilter) statusFilter.addEventListener('change', filterTable);
+  });
+</script>

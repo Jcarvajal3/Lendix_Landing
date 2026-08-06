@@ -6,7 +6,7 @@ export const prerender = false;
  * POST /api/admin/update-product-price
  *
  * Actualiza el precio de un producto en la data estática.
- * Body: { slug: string, monthly: number, retail: number }
+ * Body: { slug: string, biweekly: number, retail: number }
  *
  * NOTA: Dado que los productos están definidos en src/data/products.ts (archivo estático),
  * este endpoint no modifica el archivo directamente. En su lugar, podría:
@@ -26,17 +26,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     const body = await request.json();
-    const { slug, monthly, retail } = body;
+    const { slug, biweekly, retail } = body;
 
-    if (!slug || monthly === undefined || retail === undefined) {
-      return new Response(JSON.stringify({ error: 'slug, monthly y retail son requeridos' }), {
+    if (!slug || biweekly === undefined || retail === undefined) {
+      return new Response(JSON.stringify({ error: 'slug, biweekly y retail son requeridos' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    if (typeof monthly !== 'number' || monthly < 0) {
-      return new Response(JSON.stringify({ error: 'monthly debe ser un número positivo' }), {
+    if (typeof biweekly !== 'number' || biweekly < 0) {
+      return new Response(JSON.stringify({ error: 'biweekly debe ser un número positivo' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -68,9 +68,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       data: {
         slug,
         name: product.name,
-        previousMonthly: product.monthly,
+        previousBiweekly: product.biweekly,
         previousRetail: product.retail,
-        newMonthly: monthly,
+        newBiweekly: biweekly,
         newRetail: retail,
       },
     }), {

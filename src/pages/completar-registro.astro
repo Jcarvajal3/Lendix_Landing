@@ -55,7 +55,7 @@ import Nav from '../components/Nav.astro';
                 </div>
                 <div class="text-right">
                   <div id="summary-price" class="font-display font-semibold text-2xl text-flame-500">$-.--</div>
-                  <div class="text-ink-soft text-xs">/ mes</div>
+                  <div class="text-ink-soft text-xs">/ quincena</div>
                 </div>
               </div>
             </div>
@@ -206,7 +206,7 @@ import Nav from '../components/Nav.astro';
 
     if (elProduct) elProduct.textContent = rentSelection.product_name || rentSelection.product_slug;
     if (elPlan) elPlan.textContent = `Plan de ${rentSelection.term_months} meses`;
-    if (elPrice) elPrice.textContent = `$${rentSelection.monthly_rent}`;
+    if (elPrice) elPrice.textContent = `$${rentSelection.biweekly_rent}`;
 
     mainContent?.classList.remove('hidden');
   }
@@ -321,7 +321,7 @@ import Nav from '../components/Nav.astro';
           product_slug: rentSelection.product_slug,
           product_name: rentSelection.product_name,
           term_months: rentSelection.term_months,
-          monthly_rent: rentSelection.monthly_rent,
+          biweekly_rent: rentSelection.biweekly_rent,
           cedula_front_path: filePaths['cedula-front'],
           cedula_back_path: filePaths['cedula-back'],
           selfie_path: filePaths['selfie'],

@@ -14,7 +14,7 @@ export interface RentSelection {
   product_slug: string;
   product_name: string;
   term_months: number;
-  monthly_rent: number;
+  biweekly_rent: number;
 }
 
 export function saveRentSelection(selection: RentSelection) {

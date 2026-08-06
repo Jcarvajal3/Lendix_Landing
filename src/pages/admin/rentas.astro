@@ -2,7 +2,6 @@
 export const prerender = false;
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { supabaseAdmin } from '../../lib/supabase-admin';
-import { SUPABASE_URL } from '../../lib/env';
 
 // Fetch all rental applications
 const { data: rentals, error: rentalsError } = await supabaseAdmin
@@ -21,11 +20,37 @@ if (users) {
   users.forEach(u => userMap.set(u.id, u));
 }
 
+// El bucket 'kyc-documents' es privado (cedulas y selfies son datos
+// sensibles), asi que una URL "publica" nunca sirve para mostrarlos.
+// Hay que firmar cada ruta con el service_role key para poder verla.
+const KYC_BUCKET = 'kyc-documents';
+const SIGNED_URL_TTL = 60 * 60; // 1 hora: dura lo que dura la sesion admin
+
+async function signKycPath(path: string | null | undefined) {
+  if (!path) return null;
+  if (path.startsWith('http')) return path; // ya era una URL completa
+
+  const { data, error } = await supabaseAdmin.storage
+    .from(KYC_BUCKET)
+    .createSignedUrl(path, SIGNED_URL_TTL);
+
+  if (error) {
+    console.error(`Error firmando URL de KYC para "${path}":`, error);
+    return null;
+  }
+  return data.signedUrl;
+}
+
 // Combine data
-const rentalData = (rentals || []).map(r => ({
-  ...r,
-  user: userMap.get(r.user_id) || {}
-}));
+const rentalData = await Promise.all(
+  (rentals || []).map(async (r) => ({
+    ...r,
+    user: userMap.get(r.user_id) || {},
+    cedula_front_url: await signKycPath(r.cedula_front_path),
+    cedula_back_url: await signKycPath(r.cedula_back_path),
+    selfie_url: await signKycPath(r.selfie_path),
+  }))
+);
 
 const total = rentalData.length;
 const pending = rentalData.filter(r => r.status === 'pending' || r.status === 'reviewing').length;
@@ -63,7 +88,6 @@ function getStatusLabel(status: string) {
   }
 }
 
-const supabaseUrl = SUPABASE_URL;
 const accessToken = Astro.cookies.get('sb-access-token')?.value || '';
 ---
 <AdminLayout title="Gestión de Rentas" activePage="rentas">
@@ -118,7 +142,7 @@ const accessToken = Astro.cookies.get('sb-access-token')?.value || '';
                     <th class="py-3 px-4 whitespace-nowrap">Cliente</th>
                     <th class="py-3 px-4 whitespace-nowrap">Producto</th>
                     <th class="py-3 px-4 whitespace-nowrap">Plan</th>
-                    <th class="py-3 px-4 whitespace-nowrap">Monto/mes</th>
+                    <th class="py-3 px-4 whitespace-nowrap">Monto/quincena</th>
                     <th class="py-3 px-4 whitespace-nowrap">Estado</th>
                     <th class="py-3 px-4 whitespace-nowrap">Fecha Solicitud</th>
                     <th class="py-3 px-4 text-right whitespace-nowrap">Acciones</th>
@@ -147,7 +171,7 @@ const accessToken = Astro.cookies.get('sb-access-token')?.value || '';
                             {rental.term_months} meses
                         </td>
                         <td class="py-3 px-4 text-ink font-medium text-sm">
-                            ${(rental.monthly_rent || 0).toLocaleString('es-CO')}
+                            ${(rental.biweekly_rent || 0).toLocaleString('es-CO')}
                         </td>
                         <td class="py-3 px-4">
                             <span class={`px-2 py-1 rounded-full text-xs font-medium status-badge ${getStatusBadgeClass(rental.status)}`}>
@@ -207,7 +231,7 @@ const accessToken = Astro.cookies.get('sb-access-token')?.value || '';
     </div>
 </AdminLayout>
 
-<script is:inline define:vars={{ supabaseUrl, accessToken }}>
+<script is:inline define:vars={{ accessToken }}>
     // DOM Elements
     const searchInput = document.getElementById('searchInput');
     const statusFilter = document.getElementById('statusFilter');
@@ -345,22 +369,13 @@ const accessToken = Astro.cookies.get('sb-access-token')?.value || '';
 
     function openDetailsModal(rental) {
         const u = rental.user || {};
-        
-        // Ensure URLs are absolute for supabase storage
-        const storagePrefix = `${supabaseUrl}/storage/v1/object/public/`;
-        let cedulaFront = null;
-        let cedulaBack = null;
-        let selfie = null;
-        
-        if (rental.cedula_front_path) {
-             cedulaFront = rental.cedula_front_path.startsWith('http') ? rental.cedula_front_path : storagePrefix + rental.cedula_front_path;
-        }
-        if (rental.cedula_back_path) {
-             cedulaBack = rental.cedula_back_path.startsWith('http') ? rental.cedula_back_path : storagePrefix + rental.cedula_back_path;
-        }
-        if (rental.selfie_path) {
-             selfie = rental.selfie_path.startsWith('http') ? rental.selfie_path : storagePrefix + rental.selfie_path;
-        }
+
+        // El bucket kyc-documents es privado: el servidor ya firmo estas
+        // URLs con el service_role key (ver frontmatter). No se pueden
+        // reconstruir en el cliente porque la anon key no tiene permiso.
+        const cedulaFront = rental.cedula_front_url || null;
+        const cedulaBack = rental.cedula_back_url || null;
+        const selfie = rental.selfie_url || null;
 
         if (modalContent) {
             modalContent.innerHTML = `
@@ -405,8 +420,8 @@ const accessToken = Astro.cookies.get('sb-access-token')?.value || '';
                                 <span class="font-medium text-ink">${rental.term_months || 0} meses</span>
                             </div>
                             <div>
-                                <span class="text-xs text-gray-400 block uppercase font-medium">Monto Mensual</span>
-                                <span class="font-medium text-ink">$${(rental.monthly_rent || 0).toLocaleString('es-CO')}</span>
+                                <span class="text-xs text-gray-400 block uppercase font-medium">Monto Quincenal</span>
+                                <span class="font-medium text-ink">$${(rental.biweekly_rent || 0).toLocaleString('es-CO')}</span>
                             </div>
                             <div>
                                 <span class="text-xs text-gray-400 block uppercase font-medium">Teléfono de Contacto</span>

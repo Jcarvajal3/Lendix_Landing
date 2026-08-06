@@ -174,7 +174,7 @@ function translateStatus(status: string) {
             <th class="py-4 px-6 text-xs font-semibold text-ink/50 uppercase tracking-wider">Producto</th>
             <th class="py-4 px-6 text-xs font-semibold text-ink/50 uppercase tracking-wider">Estado</th>
             <th class="py-4 px-6 text-xs font-semibold text-ink/50 uppercase tracking-wider">Fecha</th>
-            <th class="py-4 px-6 text-xs font-semibold text-ink/50 uppercase tracking-wider text-right">Monto/mes</th>
+            <th class="py-4 px-6 text-xs font-semibold text-ink/50 uppercase tracking-wider text-right">Monto/quincena</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-ink/5">
@@ -191,7 +191,7 @@ function translateStatus(status: string) {
                   </span>
                 </td>
                 <td class="py-4 px-6 text-sm text-ink/70">{formatDate(app.created_at)}</td>
-                <td class="py-4 px-6 text-sm text-ink font-semibold text-right">{formatCurrency(app.monthly_rent)}</td>
+                <td class="py-4 px-6 text-sm text-ink font-semibold text-right">{formatCurrency(app.biweekly_rent)}</td>
               </tr>
             ))
           ) : (

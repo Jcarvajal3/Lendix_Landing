@@ -7,8 +7,8 @@ import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseKey } from '.
 // El resumen del pedido necesita el precio de los dos planes de cada producto.
 const catalogo = products.map((p) => ({
   name: p.name,
-  libre: p.monthly,
-  anual: priceFor(p.monthly, 'anual'),
+  libre: p.biweekly,
+  anual: priceFor(p.biweekly, 'anual'),
   entrega: p.entrega,
 }));
 
@@ -78,7 +78,7 @@ const pasos = [
             </div>
             <div class="shrink-0 text-right">
               <p class="font-display text-2xl font-bold text-flame-600" data-resumen-precio>—</p>
-              <p class="text-[0.75rem] text-slate-muted">al mes</p>
+              <p class="text-[0.75rem] text-slate-muted">cada quincena</p>
             </div>
           </div>
 
@@ -94,7 +94,7 @@ const pasos = [
                 class="w-full appearance-none rounded-2xl border border-hairline bg-cream/50 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22m5%208%205%205%205-5%22%20stroke%3D%22%237b736d%22%20stroke-width%3D%221.7%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:1.25rem] bg-[position:right_1rem_center] bg-no-repeat px-4 py-3.5 pr-11 text-[0.95rem] text-ink transition-colors focus:border-flame-400 focus:bg-white focus:outline-none"
               >
                 <option value="">Selecciona un producto</option>
-                {products.map((p) => <option value={p.name}>{p.name} — ${p.monthly}/mes</option>)}
+                {products.map((p) => <option value={p.name}>{p.name} — ${p.biweekly}/quincena</option>)}
                 <option value="Otro">Otro producto (lo escribo abajo)</option>
               </select>
             </div>
@@ -389,7 +389,7 @@ const pasos = [
       // El mensaje de WhatsApp llega escrito: el usuario solo pulsa enviar.
       if (hasWhatsapp && successWa) {
         const plan = payload.plan === 'anual' ? '12 meses' : 'mes a mes';
-        const precio = payload.precio_mes ? ` (${'$'}${payload.precio_mes}/mes)` : '';
+        const precio = payload.precio_quincena ? ` (${'$'}${payload.precio_quincena}/quincena)` : '';
         const texto =
           `Hola, soy ${payload.nombre}. Acabo de solicitar en la web: ` +
           `${payload.producto_interes}${precio}, plan ${plan}.`;
@@ -435,7 +435,7 @@ const pasos = [
         producto_interes: producto,
         mensaje: String(data.get('mensaje') || '').trim() || null,
         plan,
-        precio_mes: item ? (plan === 'anual' ? item.anual : item.libre) : null,
+        precio_quincena: item ? (plan === 'anual' ? item.anual : item.libre) : null,
         ...attribution(),
       };
 
