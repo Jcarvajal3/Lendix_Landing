@@ -2,8 +2,7 @@
 import ProductImage from './ProductImage.astro';
 import { products } from '../data/products';
 
-// Plan libre = precio base. Plan 12 meses = 20% menos por comprometerte.
-const LOYALTY_DISCOUNT = 0.2;
+const LOYALTY_DISCOUNT = 0;
 const priceFor = (monthly: number, plan: 'libre' | 'anual') =>
   plan === 'libre' ? monthly : Math.round(monthly * (1 - LOYALTY_DISCOUNT));
 ---
@@ -48,7 +47,6 @@ const priceFor = (monthly: number, plan: 'libre' | 'anual') =>
             class="rounded-full px-5 py-2.5 text-sm font-semibold transition-all data-[active]:bg-white data-[active]:text-ink data-[active]:shadow-sm text-ink-soft"
           >
             12 meses
-            <span class="ml-1.5 rounded-full bg-sun-300 px-2 py-0.5 text-[0.7rem] font-bold text-ink">-20%</span>
           </button>
         </div>
         <p class="mt-2.5 max-w-[19rem] text-[0.8rem] leading-relaxed text-slate-muted" data-plan-hint></p>
@@ -178,7 +176,7 @@ const priceFor = (monthly: number, plan: 'libre' | 'anual') =>
 
     const hints = {
       libre: '',
-      anual: 'Te comprometes 12 meses y pagas 20% menos cada mes.',
+      anual: 'Te comprometes 12 meses.',
     };
 
     buttons.forEach((btn) => {

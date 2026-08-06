@@ -1,8 +1,8 @@
 ---
 import { products } from '../data/products';
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+const supabaseUrl = process.env.PUBLIC_SUPABASE_URL ?? '';
+const supabaseKey = process.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 ---
 
 <section id="lista-de-espera" class="relative scroll-mt-24 overflow-hidden bg-ink py-20 sm:py-28">

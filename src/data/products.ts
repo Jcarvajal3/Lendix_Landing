@@ -22,7 +22,7 @@ export type Product = {
 };
 
 /** Descuento por comprometerse a 12 meses en vez de ir mes a mes. */
-export const LOYALTY_DISCOUNT = 0.2;
+export const LOYALTY_DISCOUNT = 0;
 
 export type Plan = 'libre' | 'anual';
 

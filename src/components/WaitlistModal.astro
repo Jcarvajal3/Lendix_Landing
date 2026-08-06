@@ -1,6 +1,6 @@
 ---
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+const supabaseUrl = process.env.PUBLIC_SUPABASE_URL ?? '';
+const supabaseKey = process.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 ---
 
 <div id="waitlist-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden w-full h-full p-4 overflow-y-auto">

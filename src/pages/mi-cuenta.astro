@@ -11,8 +11,8 @@ if (!user) {
 }
 const accessToken = Astro.cookies.get('sb-access-token')?.value;
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.PUBLIC_SUPABASE_ANON_KEY;
 
 const supabase = createClient(
   supabaseUrl,

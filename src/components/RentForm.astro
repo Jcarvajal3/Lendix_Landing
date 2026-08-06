@@ -2,8 +2,8 @@
 import { products, priceFor } from '../data/products';
 import { hasWhatsapp, whatsappNumber, email as contactEmail } from '../data/site';
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+const supabaseUrl = process.env.PUBLIC_SUPABASE_URL ?? '';
+const supabaseKey = process.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
 // El resumen del pedido necesita el precio de los dos planes de cada producto.
 const catalogo = products.map((p) => ({
@@ -306,7 +306,7 @@ const pasos = [
       const plan = planActual();
       const item = porNombre.get(nombre);
 
-      if (resPlan) resPlan.textContent = plan === 'anual' ? 'Plan 12 meses (-20%)' : 'Plan mes a mes';
+      if (resPlan) resPlan.textContent = plan === 'anual' ? 'Plan 12 meses' : 'Plan mes a mes';
 
       if (!nombre) {
         if (resProducto) resProducto.textContent = 'Elige tu producto';

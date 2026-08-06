@@ -47,31 +47,13 @@ import Nav from '../components/Nav.astro';
           <form id="kyc-form" class="space-y-8">
             <div class="space-y-6">
               <h3 class="font-display text-xl font-medium text-ink">1. Identidad</h3>
-              <p class="text-sm text-ink-soft">Sube una foto clara de tu cédula por ambos lados.</p>
+              <p class="text-sm text-ink-soft">Sube una foto clara de tu cédula.</p>
               
               <!-- Cedula Front -->
               <div class="upload-container" data-id="cedula-front">
-                <label class="block text-sm font-semibold text-ink mb-2">Foto de tu cédula (frente)</label>
+                <label class="block text-sm font-semibold text-ink mb-2">Foto de tu cédula</label>
                 <div class="upload-area relative border-2 border-dashed border-hairline rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-cream/50 transition-colors cursor-pointer group">
                   <input type="file" id="cedula-front" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" required>
-                  <div class="preview-container hidden w-full flex justify-center">
-                    <img src="" alt="Preview" class="max-h-40 object-cover rounded-xl shadow-sm">
-                  </div>
-                  <div class="placeholder-container flex flex-col items-center text-center">
-                    <svg class="w-8 h-8 text-slate-muted mb-3 group-hover:text-flame-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p class="text-sm text-ink-soft"><span class="font-medium text-flame-500">Haz clic para subir</span> o arrastra tu archivo aquí</p>
-                    <p class="text-xs text-slate-muted mt-1">PNG, JPG hasta 5MB</p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Cedula Back -->
-              <div class="upload-container" data-id="cedula-back">
-                <label class="block text-sm font-semibold text-ink mb-2">Foto de tu cédula (reverso)</label>
-                <div class="upload-area relative border-2 border-dashed border-hairline rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-cream/50 transition-colors cursor-pointer group">
-                  <input type="file" id="cedula-back" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" required>
                   <div class="preview-container hidden w-full flex justify-center">
                     <img src="" alt="Preview" class="max-h-40 object-cover rounded-xl shadow-sm">
                   </div>
@@ -255,7 +237,6 @@ import Nav from '../components/Nav.astro';
   };
 
   setupFileInput('cedula-front');
-  setupFileInput('cedula-back');
   setupFileInput('selfie');
 
   // Handle Form Submit
@@ -265,7 +246,6 @@ import Nav from '../components/Nav.astro';
     if (!currentUser || !rentSelection) return;
 
     const cedulaFrontInput = document.getElementById('cedula-front') as HTMLInputElement;
-    const cedulaBackInput = document.getElementById('cedula-back') as HTMLInputElement;
     const selfieInput = document.getElementById('selfie') as HTMLInputElement;
     
     const phoneInput = document.getElementById('phone') as HTMLInputElement;
@@ -274,11 +254,10 @@ import Nav from '../components/Nav.astro';
 
     const files = {
       'cedula-front': cedulaFrontInput.files?.[0],
-      'cedula-back': cedulaBackInput.files?.[0],
       'selfie': selfieInput.files?.[0]
     };
 
-    if (!files['cedula-front'] || !files['cedula-back'] || !files['selfie']) {
+    if (!files['cedula-front'] || !files['selfie']) {
       showError('Por favor sube todas las imágenes requeridas.');
       return;
     }

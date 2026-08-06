@@ -62,7 +62,7 @@ function getStatusLabel(status: string) {
   }
 }
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || '';
+const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || '';
 const accessToken = Astro.cookies.get('sb-access-token')?.value || '';
 ---
 <AdminLayout title="Gestión de Rentas" activePage="rentas">

@@ -1,10 +1,14 @@
 ---
 // RentModal.astro
 // Modal component for initiating a rental flow with Google Auth
+const supabaseUrl = process.env.PUBLIC_SUPABASE_URL ?? '';
+const supabaseAnonKey = process.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 ---
 
 <div 
-  id="rent-modal" 
+  id="rent-modal"
+  data-supabase-url={supabaseUrl}
+  data-supabase-key={supabaseAnonKey}
   class="fixed inset-0 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300"
   aria-hidden="true"
 >
@@ -43,7 +47,6 @@
           
           <!-- 12 Months / Plan Anual -->
           <label class="relative flex flex-col p-4 border-2 border-slate-muted rounded-2xl cursor-pointer hover:border-flame-300 transition-colors has-[:checked]:border-flame-500 has-[:checked]:bg-flame-50/50">
-            <div class="absolute -top-3 right-3 bg-sun-300 text-ink text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">-20% dscto</div>
             <input type="radio" name="rent_plan" value="12" class="peer sr-only">
             <span class="text-sm font-bold text-ink mb-1">Plan Anual (12m)</span>
             <span class="text-xs text-ink-soft mb-2">El mejor precio</span>
@@ -86,7 +89,7 @@
   let isAuthenticated = false;
 
   // Constants based on business logic
-  const LOYALTY_DISCOUNT = 0.2;
+  const LOYALTY_DISCOUNT = 0;
   
   // State
   let currentProduct = {
@@ -237,8 +240,9 @@
         return;
       }
       
-      const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-      const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+      const modalEl = document.getElementById('rent-modal');
+      const supabaseUrl = modalEl?.dataset.supabaseUrl || '';
+      const supabaseKey = modalEl?.dataset.supabaseKey || '';
       
       if (!supabaseUrl || !supabaseKey) {
         console.error('Missing Supabase env vars');
