@@ -57,52 +57,89 @@ export const prerender = false;
 
   <script>
     // Se usa el MISMO cliente Supabase que arranco el login (el singleton de
-    // lib/supabase), no una copia suelta desde un CDN. En PKCE, el navegador
-    // guarda un `code_verifier` al pedir el login y hay que canjearlo con un
-    // cliente que lea ese mismo storage: con dos clientes distintos (peor aun,
-    // de versiones distintas) el canje falla y el usuario vuelve sin sesion.
+    // lib/supabase), no una copia suelta desde un CDN: en PKCE el navegador
+    // guarda un `code_verifier` al pedir el login y solo un cliente que lea ese
+    // mismo storage puede canjearlo.
     import { supabase, syncSessionToCookies } from '../../lib/supabase';
 
     const statusText = document.getElementById('status-text');
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
+    const url = new URL(window.location.href);
+    const query = url.searchParams;
+    // En el flujo implicito Supabase responde en el fragmento, no en el query.
+    const hash = new URLSearchParams(url.hash.replace(/^#/, ''));
 
     // Solo rutas internas: un `next` absoluto permitiria mandar al usuario
     // recien autenticado a un dominio ajeno.
-    const rawNext = params.get('next') || '/completar-registro';
+    const rawNext = query.get('next') || '/completar-registro';
     const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/';
 
-    /** Devuelve al inicio explicando que fallo, en vez de morir en silencio. */
+    /**
+     * Obtiene la sesion aceptando las dos formas en que Supabase puede
+     * responder. Hoy el cliente pide PKCE (caso A), pero el caso B se mantiene
+     * a proposito: cubre a cualquiera que tenga un login a medias del flujo
+     * anterior y evita que un cambio de configuracion vuelva a romper el login
+     * en silencio.
+     */
+    async function resolveSession() {
+      // A. PKCE — la respuesta viene como ?code= y se canjea con el verifier.
+      const code = query.get('code');
+      if (code) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) throw error;
+        return data.session;
+      }
+
+      // B. Implicito — los tokens vienen ya listos en el fragmento.
+      const accessToken = hash.get('access_token');
+      const refreshToken = hash.get('refresh_token');
+      if (accessToken && refreshToken) {
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (error) throw error;
+        return data.session;
+      }
+
+      // C. Sin code ni tokens: quiza ya habia sesion y entraron a esta URL a mano.
+      const { data } = await supabase.auth.getSession();
+      return data.session;
+    }
+
+    /** Vuelve al inicio explicando que fallo, en vez de morir en silencio. */
     function fail(reason: string, detail?: unknown) {
       console.error('[auth/callback]', reason, detail ?? '');
       if (statusText) statusText.textContent = 'No pudimos completar el inicio de sesión. Regresando...';
-      setTimeout(() => { window.location.href = `/?auth_error=${encodeURIComponent(reason)}`; }, 1800);
+      setTimeout(() => {
+        window.location.replace(`/?auth_error=${encodeURIComponent(reason)}`);
+      }, 1800);
     }
 
-    // Google puede devolver un error explicito (usuario cancelo, consent denegado).
-    const oauthError = params.get('error_description') || params.get('error');
+    // Google/Supabase pueden devolver un error explicito (usuario cancelo,
+    // consentimiento denegado, redirect no permitido). Puede venir por
+    // cualquiera de los dos canales.
+    const oauthError =
+      query.get('error_description') || hash.get('error_description') ||
+      query.get('error') || hash.get('error');
 
     if (oauthError) {
       fail(oauthError);
-    } else if (!code) {
-      // Sin code no hay nada que canjear: o ya habia sesion, o entraron a mano.
-      window.location.href = next;
     } else {
       try {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        const session = await resolveSession();
 
-        if (error) {
-          fail(error.message, error);
-        } else if (!data.session) {
+        if (!session) {
           fail('sin_sesion');
         } else {
-          // Cookies para que el middleware vea al usuario en el server.
-          // Se escriben ANTES de navegar, asi la request a `next` ya las lleva.
-          syncSessionToCookies(data.session.access_token, data.session.refresh_token);
+          // Cookies para que el middleware vea al usuario en el server. Se
+          // escriben ANTES de navegar, asi la request a `next` ya las lleva.
+          syncSessionToCookies(session.access_token, session.refresh_token);
+          // replace y no href: deja el callback fuera del historial, para que
+          // el boton "atras" no reintente canjear un code ya consumido.
           window.location.replace(next);
         }
       } catch (err) {
-        fail('excepcion', err);
+        fail(err instanceof Error ? err.message : 'excepcion', err);
       }
     }
   </script>

@@ -6,16 +6,60 @@ import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseKey } from '.
 
 const accessToken = Astro.cookies.get('sb-access-token')?.value;
 
+// Revocar la sesión en Supabase (invalida el refresh token del lado servidor).
 if (accessToken) {
   const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     global: { headers: { Authorization: `Bearer ${accessToken}` } },
   });
   await supabase.auth.signOut();
 }
 
-// Limpiar cookies de autenticación
 Astro.cookies.delete('sb-access-token', { path: '/' });
 Astro.cookies.delete('sb-refresh-token', { path: '/' });
-
-return Astro.redirect('/');
 ---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cerrando sesión... | Lendix</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-color: #FAF8F5;
+      color: #4B5563;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <p>Cerrando sesión...</p>
+
+  <!--
+    Esta pagina NO puede ser solo un redirect del servidor. La sesion tambien
+    vive en el localStorage del navegador, y al llegar a "/" el Nav la
+    encontraria y volveria a escribir las cookies que el servidor acaba de
+    borrar — dejando al usuario dentro despues de pedir salir. Hay que limpiar
+    el lado cliente aqui, antes de irse.
+  -->
+  <script>
+    import { signOutClient } from '../../lib/supabase';
+
+    try {
+      await signOutClient();
+    } catch (err) {
+      console.error('[auth/logout] fallo el cierre de sesión local:', err);
+    }
+
+    window.location.replace('/');
+  </script>
+</body>
+</html>

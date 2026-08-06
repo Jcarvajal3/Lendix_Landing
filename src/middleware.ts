@@ -6,6 +6,18 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './lib/env';
 const supabaseUrl = SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseKey = SUPABASE_ANON_KEY || 'placeholder-anon-key';
 
+/**
+ * Los clientes del servidor son de usar y tirar, uno por request. Sin esto,
+ * una funcion serverless "caliente" podria arrastrar la sesion de un usuario
+ * al siguiente request, y arrancaria timers de refresco que no tienen sentido
+ * fuera del navegador.
+ */
+const SERVER_AUTH = {
+  persistSession: false,
+  autoRefreshToken: false,
+  detectSessionInUrl: false,
+} as const;
+
 /** Rutas que requieren autenticación — redirigir a / si no hay sesión. */
 const PROTECTED_ROUTES = ['/mi-cuenta'];
 
@@ -26,6 +38,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
         // 1. Si hay access token, validarlo tal cual.
         if (accessToken) {
           const supabase = createClient(supabaseUrl, supabaseKey, {
+            auth: SERVER_AUTH,
             global: { headers: { Authorization: `Bearer ${accessToken}` } },
           });
 
@@ -43,7 +56,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
         //    /mi-cuenta y /admin lo rebotaban al inicio aunque su sesion
         //    siguiera perfectamente viva.
         if (!context.locals.user && refreshToken) {
-          const freshClient = createClient(supabaseUrl, supabaseKey);
+          const freshClient = createClient(supabaseUrl, supabaseKey, { auth: SERVER_AUTH });
           const { data } = await freshClient.auth.refreshSession({
             refresh_token: refreshToken,
           });

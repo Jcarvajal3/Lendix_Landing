@@ -14,11 +14,31 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   );
 }
 
-/** Cliente Supabase compartido (para uso general). */
+/**
+ * Cliente Supabase compartido (para uso general).
+ *
+ * `flowType: 'pkce'` es obligatorio aqui, no una preferencia. supabase-js trae
+ * `'implicit'` por defecto, y en ese modo Supabase devuelve la sesion en el
+ * FRAGMENTO de la URL (`/auth/callback#access_token=...`). El fragmento no
+ * sobrevive una redireccion, asi que los tokens se perdian y el usuario volvia
+ * de Google sin sesion, siempre. Con PKCE la respuesta llega como `?code=` en
+ * el query string, que si sobrevive, y ademas los tokens nunca aparecen en la
+ * URL (ni en el historial, ni en el Referer).
+ *
+ * `detectSessionInUrl: false` porque el canje lo hace /auth/callback de forma
+ * explicita: el `code` es de un solo uso y no puede haber dos consumidores.
+ */
 let _supabase: SupabaseClient | null = null;
 export function getSupabase(): SupabaseClient {
   if (!_supabase) {
-    _supabase = createClient(supabaseUrl, supabaseKey);
+    _supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        flowType: 'pkce',
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
+      },
+    });
   }
   return _supabase;
 }

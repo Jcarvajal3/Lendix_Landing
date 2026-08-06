@@ -120,7 +120,7 @@ const links = [
 </header>
 
 <script>
-  import { supabase, initSessionFromCookies, signInWithGoogle, signOutClient } from '../lib/supabase';
+  import { supabase, initSessionFromCookies, signInWithGoogle } from '../lib/supabase';
 
   /**
    * /auth/callback manda aqui con ?auth_error=... cuando el canje falla.
@@ -218,14 +218,9 @@ const links = [
     if (loginBtn) loginBtn.addEventListener('click', signIn);
     if (mobileLoginBtn) mobileLoginBtn.addEventListener('click', signIn);
 
-    // Logout: limpiar client-side primero, luego server-side
-    document.querySelectorAll('a[href="/auth/logout"]').forEach(link => {
-      link.addEventListener('click', async (e) => {
-        e.preventDefault();
-        await signOutClient();
-        window.location.href = '/auth/logout';
-      });
-    });
+    // Logout: no se intercepta el click. /auth/logout ya revoca la sesion en
+    // el servidor Y limpia localStorage + cookies en el cliente, asi que
+    // funciona igual si llegan ahi por un enlace, por el historial o a mano.
 
     // Dropdown toggle
     if (avatarBtn && dropdown && userDiv) {
