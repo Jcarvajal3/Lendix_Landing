@@ -1,7 +1,6 @@
 ---
 export const prerender = false;
 
-import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseKey } from '../../lib/env';
 ---
 
 <!DOCTYPE html>
@@ -49,7 +48,6 @@ import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseKey } from '.
       color: #4B5563;
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
   <div class="card">
@@ -57,44 +55,56 @@ import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseKey } from '.
     <p id="status-text">Completando inicio de sesión...</p>
   </div>
 
-  <script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
-    (async function() {
-      const statusText = document.getElementById('status-text');
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get('code');
-      const nextParam = params.get('next') || '/completar-registro';
+  <script>
+    // Se usa el MISMO cliente Supabase que arranco el login (el singleton de
+    // lib/supabase), no una copia suelta desde un CDN. En PKCE, el navegador
+    // guarda un `code_verifier` al pedir el login y hay que canjearlo con un
+    // cliente que lea ese mismo storage: con dos clientes distintos (peor aun,
+    // de versiones distintas) el canje falla y el usuario vuelve sin sesion.
+    import { supabase, syncSessionToCookies } from '../../lib/supabase';
 
-      if (!code) {
-        window.location.href = nextParam;
-        return;
-      }
+    const statusText = document.getElementById('status-text');
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
 
+    // Solo rutas internas: un `next` absoluto permitiria mandar al usuario
+    // recien autenticado a un dominio ajeno.
+    const rawNext = params.get('next') || '/completar-registro';
+    const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/';
+
+    /** Devuelve al inicio explicando que fallo, en vez de morir en silencio. */
+    function fail(reason: string, detail?: unknown) {
+      console.error('[auth/callback]', reason, detail ?? '');
+      if (statusText) statusText.textContent = 'No pudimos completar el inicio de sesión. Regresando...';
+      setTimeout(() => { window.location.href = `/?auth_error=${encodeURIComponent(reason)}`; }, 1800);
+    }
+
+    // Google puede devolver un error explicito (usuario cancelo, consent denegado).
+    const oauthError = params.get('error_description') || params.get('error');
+
+    if (oauthError) {
+      fail(oauthError);
+    } else if (!code) {
+      // Sin code no hay nada que canjear: o ya habia sesion, o entraron a mano.
+      window.location.href = next;
+    } else {
       try {
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (error) {
-          console.error('[Auth Callback Error]', error);
-          statusText.textContent = 'Error al autenticar. Redirigiendo...';
-          setTimeout(function() { window.location.href = '/'; }, 1500);
-          return;
+          fail(error.message, error);
+        } else if (!data.session) {
+          fail('sin_sesion');
+        } else {
+          // Cookies para que el middleware vea al usuario en el server.
+          // Se escriben ANTES de navegar, asi la request a `next` ya las lleva.
+          syncSessionToCookies(data.session.access_token, data.session.refresh_token);
+          window.location.replace(next);
         }
-
-        if (data.session) {
-          var isProd = window.location.protocol === 'https:';
-          var secureFlag = isProd ? '; Secure' : '';
-          document.cookie = 'sb-access-token=' + encodeURIComponent(data.session.access_token) + '; path=/; max-age=3600; SameSite=Lax' + secureFlag;
-          document.cookie = 'sb-refresh-token=' + encodeURIComponent(data.session.refresh_token) + '; path=/; max-age=' + (3600 * 24 * 30) + '; SameSite=Lax' + secureFlag;
-        }
-
-        window.location.href = nextParam;
-
       } catch (err) {
-        console.error('[Auth Callback Exception]', err);
-        statusText.textContent = 'Error inesperado. Redirigiendo...';
-        setTimeout(function() { window.location.href = '/'; }, 1500);
+        fail('excepcion', err);
       }
-    })();
+    }
   </script>
 </body>
 </html>

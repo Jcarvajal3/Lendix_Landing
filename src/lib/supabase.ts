@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './env';
 
 // Este modulo se importa desde <script> de componentes, asi que termina en el
@@ -79,7 +79,7 @@ function deleteCookie(name: string) {
 }
 
 /** Sincroniza los tokens de una sesión activa a cookies del navegador. */
-function syncSessionToCookies(accessToken: string, refreshToken: string) {
+export function syncSessionToCookies(accessToken: string, refreshToken: string) {
   setCookie('sb-access-token', accessToken, 60 * 60);             // 1 hora
   setCookie('sb-refresh-token', refreshToken, 60 * 60 * 24 * 30); // 30 días
 }
@@ -111,11 +111,33 @@ function setupAuthListener() {
 /**
  * Inicializa la sesión de Supabase y sincroniza cookies.
  * Llamar en cada página que necesite verificar autenticación.
+ *
+ * Single-flight a proposito: una misma pagina la llama desde varios scripts
+ * (Nav + el script de la pagina). Sin memoizar, dos `setSession` concurrentes
+ * compiten por el mismo refresh token — y como Supabase rota el refresh token
+ * en cada uso, la segunda llamada recibe un token ya consumido y falla. Ese
+ * era el origen del bucle "Debes iniciar sesion".
  */
-export async function initSessionFromCookies() {
+let sessionPromise: Promise<Session | null> | null = null;
+
+export function initSessionFromCookies(): Promise<Session | null> {
+  if (!sessionPromise) sessionPromise = resolveSession();
+  return sessionPromise;
+}
+
+async function resolveSession(): Promise<Session | null> {
   setupAuthListener();
 
-  // 1. Intentar restaurar desde cookies
+  // 1. Lo que ya tiene el SDK en localStorage manda: esta fresco, lo refresca
+  //    solo si hace falta y no gasta el refresh token de las cookies.
+  const { data: existing } = await supabase.auth.getSession();
+  if (existing.session) {
+    syncSessionToCookies(existing.session.access_token, existing.session.refresh_token);
+    return existing.session;
+  }
+
+  // 2. Fallback: rehidratar desde las cookies que dejo /auth/callback.
+  //    Pasa en pestañas nuevas, o si el usuario limpio localStorage.
   const accessToken = getCookie('sb-access-token');
   const refreshToken = getCookie('sb-refresh-token');
 
@@ -125,20 +147,36 @@ export async function initSessionFromCookies() {
       refresh_token: refreshToken,
     });
 
-    if (!error && data.session) {
-      return data.session;
-    }
+    if (!error && data.session) return data.session;
+
+    // Cookies muertas (token rotado o expirado). Borrarlas: si se quedan,
+    // cada carga vuelve a intentar el mismo token invalido y el usuario
+    // queda atrapado reintentando login para siempre.
+    clearAuthCookies();
   }
 
-  // 2. Fallback: sesión en localStorage del SDK
-  const { data } = await supabase.auth.getSession();
+  return null;
+}
 
-  if (data.session) {
-    // Sincronizar a cookies para que el servidor pueda leerlas
-    syncSessionToCookies(data.session.access_token, data.session.refresh_token);
+/**
+ * Arranca el login con Google.
+ * @param next Ruta a la que volver despues de autenticar. Debe ser una ruta
+ *   interna (empezar con "/") — nunca una URL absoluta, para no permitir
+ *   redirecciones a dominios ajenos.
+ */
+export async function signInWithGoogle(next = '/') {
+  const safeNext = next.startsWith('/') && !next.startsWith('//') ? next : '/';
+  const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo },
+  });
+
+  if (error) {
+    console.error('[auth] No se pudo iniciar el login con Google:', error);
+    throw error;
   }
-
-  return data.session;
 }
 
 /**
@@ -148,4 +186,5 @@ export async function initSessionFromCookies() {
 export async function signOutClient() {
   await supabase.auth.signOut();
   clearAuthCookies();
+  sessionPromise = null; // que el proximo init no devuelva la sesion vieja
 }

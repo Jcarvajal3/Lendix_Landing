@@ -1,13 +1,10 @@
 ---
 // RentModal.astro
 // Modal component for initiating a rental flow with Google Auth
-import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseAnonKey } from '../lib/env';
 ---
 
-<div 
+<div
   id="rent-modal"
-  data-supabase-url={supabaseUrl}
-  data-supabase-key={supabaseAnonKey}
   class="fixed inset-0 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300"
   aria-hidden="true"
 >
@@ -82,8 +79,11 @@ import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseAnonKey } fro
 </div>
 
 <script>
-  import { createClient } from '@supabase/supabase-js';
-  import { initSessionFromCookies } from '../lib/supabase';
+  import { initSessionFromCookies, signInWithGoogle } from '../lib/supabase';
+  import { saveRentSelection } from '../lib/rent-selection';
+
+  /** Adonde vuelve el usuario despues de autenticar con Google. */
+  const RENT_FLOW_NEXT = '/completar-registro';
 
   let isAuthenticated = false;
 
@@ -225,51 +225,30 @@ import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseAnonKey } fro
       
       const termMonths = parseInt(selected.value, 10);
       const monthlyRent = getPrice(currentProduct.monthly, termMonths);
-      
-      // Store selection for after redirect
-      sessionStorage.setItem('lendix_rent_selection', JSON.stringify({
+
+      // Guardar la seleccion ANTES de salir a Google, para poder mostrarla
+      // en /completar-registro cuando el usuario regrese.
+      saveRentSelection({
         product_slug: currentProduct.slug,
         product_name: currentProduct.name,
         term_months: termMonths,
         monthly_rent: monthlyRent
-      }));
-      
+      });
+
       if (isAuthenticated) {
-        window.location.href = '/completar-registro';
+        window.location.href = RENT_FLOW_NEXT;
         return;
       }
-      
-      const modalEl = document.getElementById('rent-modal');
-      const supabaseUrl = modalEl?.dataset.supabaseUrl || '';
-      const supabaseKey = modalEl?.dataset.supabaseKey || '';
-      
-      if (!supabaseUrl || !supabaseKey) {
-        console.error('Missing Supabase env vars');
-        alert('Error de configuración. Intenta nuevamente.');
-        return;
-      }
-      
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
+
       // Loading state UI
       submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
       const originalHTML = submitBtn.innerHTML;
       submitBtn.innerHTML = '<span class="inline-block w-5 h-5 border-2 border-slate-300 border-t-ink rounded-full animate-spin mr-2"></span><span>Conectando...</span>';
-      
-      const siteUrl = window.location.origin;
-      
+
       try {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: `${siteUrl}/auth/callback`
-          }
-        });
-        
-        if (error) throw error;
-        
-      } catch (err) {
-        console.error('Google Auth Error:', err);
+        // `next` lleva al formulario de alquiler, no de vuelta a la landing.
+        await signInWithGoogle(RENT_FLOW_NEXT);
+      } catch {
         alert('No se pudo conectar con Google. Por favor, intenta de nuevo.');
         submitBtn.innerHTML = originalHTML;
         submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');

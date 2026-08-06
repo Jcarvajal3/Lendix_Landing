@@ -9,16 +9,36 @@ import Nav from '../components/Nav.astro';
     
     <main class="flex-grow container-x py-12 md:py-24 flex items-center justify-center">
       <div class="w-full max-w-2xl">
+        <div id="auth-loading" class="text-center card-surface rounded-4xl p-10 mb-8 border border-hairline/50 shadow-sm">
+          <div class="mx-auto mb-5 h-11 w-11 animate-spin rounded-full border-[3.5px] border-hairline border-t-flame-500"></div>
+          <p class="text-ink-soft">Verificando tu sesión...</p>
+        </div>
+
         <div id="auth-warning" class="hidden text-center card-surface rounded-4xl p-10 mb-8 border border-hairline/50 shadow-sm">
           <h2 class="font-display text-2xl font-semibold text-ink mb-4">Necesitas iniciar sesión</h2>
-          <p class="text-ink-soft mb-8">Debes iniciar sesión para completar tu solicitud.</p>
-          <a href="/" class="inline-flex items-center justify-center h-14 px-8 rounded-full bg-flame-500 text-white font-medium hover:bg-flame-600 transition-colors">Volver al inicio</a>
+          <p class="text-ink-soft mb-8">Entra con Google para completar tu solicitud. Si es tu primera vez, te creamos la cuenta al momento.</p>
+          <!-- Este boton reintenta el login volviendo AQUI. El "Volver al inicio"
+               que habia antes perdia el contexto y dejaba al usuario dando vueltas. -->
+          <button
+            type="button"
+            id="auth-retry"
+            class="mx-auto inline-flex items-center justify-center gap-3 h-14 px-8 rounded-full bg-white border border-slate-muted shadow-sm hover:shadow-md text-ink font-medium transition-all hover:bg-slate-50"
+          >
+            <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            <span>Continuar con Google</span>
+          </button>
+          <p class="mt-6 text-sm"><a href="/" class="text-ink-soft underline underline-offset-4 hover:text-flame-600">Volver al inicio</a></p>
         </div>
 
         <div id="selection-warning" class="hidden text-center card-surface rounded-4xl p-10 mb-8 border border-hairline/50 shadow-sm">
           <h2 class="font-display text-2xl font-semibold text-ink mb-4">No has seleccionado un equipo</h2>
           <p class="text-ink-soft mb-8">Por favor, elige el equipo que deseas rentar antes de continuar.</p>
-          <a href="/" class="inline-flex items-center justify-center h-14 px-8 rounded-full bg-flame-500 text-white font-medium hover:bg-flame-600 transition-colors">Ver catálogo</a>
+          <a href="/#catalogo" class="inline-flex items-center justify-center h-14 px-8 rounded-full bg-flame-500 text-white font-medium hover:bg-flame-600 transition-colors">Ver catálogo</a>
         </div>
         
         <div id="main-content" class="card-surface rounded-4xl p-6 sm:p-10 border border-hairline/50 shadow-sm hidden">
@@ -134,11 +154,14 @@ import Nav from '../components/Nav.astro';
 </Base>
 
 <script>
-  import { supabase, initSessionFromCookies } from '../lib/supabase';
+  import { supabase, initSessionFromCookies, signInWithGoogle } from '../lib/supabase';
+  import { readRentSelection, clearRentSelection } from '../lib/rent-selection';
 
   // Setup UI elements
   const mainContent = document.getElementById('main-content');
+  const authLoading = document.getElementById('auth-loading');
   const authWarning = document.getElementById('auth-warning');
+  const authRetry = document.getElementById('auth-retry');
   const selectionWarning = document.getElementById('selection-warning');
   const formErrorDiv = document.getElementById('form-error');
   const kycForm = document.getElementById('kyc-form') as HTMLFormElement;
@@ -150,10 +173,16 @@ import Nav from '../components/Nav.astro';
   let currentUser: any = null;
   let rentSelection: any = null;
 
+  // Reintentar el login desde aqui y volver AQUI, conservando la seleccion.
+  authRetry?.addEventListener('click', () => {
+    signInWithGoogle('/completar-registro');
+  });
+
   async function checkAuthAndSelection() {
-    // Inicializar sesión desde cookies (seteadas por /auth/callback)
+    // La sesión sale de localStorage o de las cookies que dejó /auth/callback.
     const session = await initSessionFromCookies();
-    
+    authLoading?.classList.add('hidden');
+
     if (session) {
       currentUser = session.user;
     }
@@ -163,29 +192,23 @@ import Nav from '../components/Nav.astro';
       return;
     }
 
-    // Check Selection
-    const selectionData = sessionStorage.getItem('lendix_rent_selection');
-    if (!selectionData) {
+    rentSelection = readRentSelection();
+
+    if (!rentSelection) {
       selectionWarning?.classList.remove('hidden');
       return;
     }
 
-    try {
-      rentSelection = JSON.parse(selectionData);
-      
-      // Populate summary
-      const elProduct = document.getElementById('summary-product');
-      const elPlan = document.getElementById('summary-plan');
-      const elPrice = document.getElementById('summary-price');
-      
-      if (elProduct) elProduct.textContent = rentSelection.product_name || rentSelection.product_slug;
-      if (elPlan) elPlan.textContent = `Plan de ${rentSelection.term_months} meses`;
-      if (elPrice) elPrice.textContent = `$${rentSelection.monthly_rent}`;
+    // Populate summary
+    const elProduct = document.getElementById('summary-product');
+    const elPlan = document.getElementById('summary-plan');
+    const elPrice = document.getElementById('summary-price');
 
-      mainContent?.classList.remove('hidden');
-    } catch (e) {
-      selectionWarning?.classList.remove('hidden');
-    }
+    if (elProduct) elProduct.textContent = rentSelection.product_name || rentSelection.product_slug;
+    if (elPlan) elPlan.textContent = `Plan de ${rentSelection.term_months} meses`;
+    if (elPrice) elPrice.textContent = `$${rentSelection.monthly_rent}`;
+
+    mainContent?.classList.remove('hidden');
   }
 
   // Handle file preview
@@ -313,7 +336,7 @@ import Nav from '../components/Nav.astro';
       // Success
       mainContent?.classList.add('hidden');
       successState?.classList.remove('hidden');
-      sessionStorage.removeItem('lendix_rent_selection');
+      clearRentSelection();
 
     } catch (error: any) {
       console.error(error);
@@ -343,6 +366,12 @@ import Nav from '../components/Nav.astro';
     }
   }
 
-  // Initialize
-  document.addEventListener('DOMContentLoaded', checkAuthAndSelection);
+  // Initialize. Si el DOM ya termino de parsear (los modulos de Astro son
+  // diferidos, asi que suele ser el caso) hay que arrancar a mano: esperar a
+  // DOMContentLoaded a secas dejaria el spinner girando para siempre.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkAuthAndSelection);
+  } else {
+    checkAuthAndSelection();
+  }
 </script>

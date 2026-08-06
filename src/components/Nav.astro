@@ -120,11 +120,38 @@ const links = [
 </header>
 
 <script>
-  import { supabase, initSessionFromCookies, signOutClient } from '../lib/supabase';
+  import { supabase, initSessionFromCookies, signInWithGoogle, signOutClient } from '../lib/supabase';
 
-  document.addEventListener('DOMContentLoaded', async () => {
+  /**
+   * /auth/callback manda aqui con ?auth_error=... cuando el canje falla.
+   * Sin esto el usuario solo veia que "no pasaba nada" y reintentaba en bucle.
+   */
+  function showAuthError() {
+    const params = new URLSearchParams(window.location.search);
+    const reason = params.get('auth_error');
+    if (!reason) return;
+
+    const toast = document.createElement('div');
+    toast.className =
+      'fixed inset-x-4 top-24 z-[60] mx-auto max-w-md rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-sm text-red-700 shadow-lg';
+    toast.setAttribute('role', 'alert');
+    toast.textContent = 'No pudimos completar el inicio de sesión. Intenta de nuevo.';
+    document.body.appendChild(toast);
+    console.error('[auth] fallo el login:', reason);
+
+    setTimeout(() => toast.remove(), 6000);
+
+    // Limpiar la URL para que un refresh no vuelva a mostrar el aviso.
+    params.delete('auth_error');
+    const qs = params.toString();
+    history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash);
+  }
+
+  async function initNav() {
+    showAuthError();
+
     const session = await initSessionFromCookies();
-    
+
     const loginBtn = document.getElementById('nav-login');
     const userDiv = document.getElementById('nav-user');
     const avatarImg = document.getElementById('nav-avatar-img') as HTMLImageElement;
@@ -154,12 +181,13 @@ const links = [
 
       // Mostrar enlace "Dashboard" si el usuario es admin/superadmin
       try {
-        // Usar createClient con el token de sesión activo para bypassear RLS correctamente
-        const { data: profile, error: profileError } = await supabase
+        // maybeSingle y no single: un usuario recien creado puede no tener
+        // fila en user_profiles todavia, y single trata "0 filas" como error.
+        const { data: profile } = await supabase
           .from('user_profiles')
           .select('role')
           .eq('id', session.user.id)
-          .single();
+          .maybeSingle();
 
         if (profile && (profile.role === 'admin' || profile.role === 'superadmin')) {
           const dashboardLink = document.getElementById('nav-dashboard-link');
@@ -178,15 +206,13 @@ const links = [
       }
     }
 
-    // Login con Google
-    const signIn = (e: Event) => {
+    // Login con Google. Con OAuth, entrar y registrarse son lo mismo: si el
+    // usuario es nuevo, Supabase crea la cuenta y el trigger on_auth_user_created
+    // le crea su fila en user_profiles. Por eso no hay boton de "Registrarse".
+    const signIn = async (e: Event) => {
       e.preventDefault();
-      supabase.auth.signInWithOAuth({ 
-        provider: 'google', 
-        options: { 
-          redirectTo: window.location.origin + '/auth/callback?next=' + encodeURIComponent(window.location.pathname) 
-        } 
-      });
+      // Volver a la misma pagina donde estaba (con querystring, sin el hash).
+      await signInWithGoogle(window.location.pathname + window.location.search);
     };
 
     if (loginBtn) loginBtn.addEventListener('click', signIn);
@@ -219,7 +245,16 @@ const links = [
         }
       });
     }
-  });
+  }
+
+  // Los <script> de Astro son modulos diferidos: normalmente corren justo
+  // ANTES de DOMContentLoaded, pero si el evento ya paso hay que arrancar a
+  // mano o el nav se queda para siempre en estado "no logueado".
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNav);
+  } else {
+    initNav();
+  }
 </script>
 
 <script is:inline>

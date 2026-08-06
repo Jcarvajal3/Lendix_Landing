@@ -21,29 +21,38 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const accessToken = context.cookies.get('sb-access-token')?.value;
     const refreshToken = context.cookies.get('sb-refresh-token')?.value;
 
-    if (accessToken) {
+    if (accessToken || refreshToken) {
       try {
-        const supabase = createClient(supabaseUrl, supabaseKey, {
-          global: { headers: { Authorization: `Bearer ${accessToken}` } },
-        });
+        // 1. Si hay access token, validarlo tal cual.
+        if (accessToken) {
+          const supabase = createClient(supabaseUrl, supabaseKey, {
+            global: { headers: { Authorization: `Bearer ${accessToken}` } },
+          });
 
-        // Verificar que el token es válido
-        const { data: { user }, error } = await supabase.auth.getUser();
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) context.locals.user = user;
+        }
 
-        if (user) {
-          context.locals.user = user;
-        } else if (refreshToken && error) {
-          // Token expirado, intentar renovar
+        // 2. Sin usuario todavia pero con refresh token, renovar.
+        //
+        //    Esta rama tambien cubre el caso "no hay access token": la cookie
+        //    sb-access-token vive 1 hora y el navegador la borra al vencer,
+        //    mientras que sb-refresh-token dura 30 dias. Antes solo se
+        //    intentaba renovar si el access token seguia presente, asi que
+        //    pasada la hora el servidor daba al usuario por deslogueado y
+        //    /mi-cuenta y /admin lo rebotaban al inicio aunque su sesion
+        //    siguiera perfectamente viva.
+        if (!context.locals.user && refreshToken) {
           const freshClient = createClient(supabaseUrl, supabaseKey);
-          const { data } = await freshClient.auth.setSession({
-            access_token: accessToken,
+          const { data } = await freshClient.auth.refreshSession({
             refresh_token: refreshToken,
           });
 
           if (data.session && data.user) {
             context.locals.user = data.user;
 
-            // Actualizar cookies con tokens renovados
+            // Guardar los tokens renovados: Supabase rota el refresh token en
+            // cada uso, asi que quedarse con el viejo invalida la sesion.
             const cookieOpts = getSecureCookieOptions(import.meta.env.PROD);
             context.cookies.set('sb-access-token', data.session.access_token, {
               ...cookieOpts,
