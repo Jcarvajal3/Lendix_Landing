@@ -1,0 +1,197 @@
+---
+import '@fontsource-variable/space-grotesk';
+import '@fontsource-variable/inter';
+import '../styles/admin.css';
+import Logo from '../components/Logo.astro';
+
+export const prerender = false;
+
+interface Props {
+  title: string;
+  activePage?: string;
+}
+
+const { title, activePage = '' } = Astro.props;
+
+const userProfile = Astro.locals.userProfile;
+const user = Astro.locals.user;
+
+if (!userProfile) {
+  return Astro.redirect('/');
+}
+
+const navItems = [
+  {
+    section: 'Principal',
+    items: [
+      { href: '/admin', label: 'Dashboard', id: 'dashboard', icon: 'chart-bar' },
+      { href: '/admin/productos', label: 'Productos', id: 'productos', icon: 'cube' },
+      { href: '/admin/usuarios', label: 'Usuarios', id: 'usuarios', icon: 'users' },
+    ],
+  },
+  {
+    section: 'Operaciones',
+    items: [
+      { href: '/admin/rentas', label: 'Rentas', id: 'rentas', icon: 'document-text' },
+      { href: '/admin/pagos', label: 'Pagos', id: 'pagos', icon: 'credit-card' },
+    ],
+  },
+  {
+    section: 'Análisis',
+    items: [
+      { href: '/admin/metricas', label: 'Métricas', id: 'metricas', icon: 'chart-pie' },
+    ],
+  },
+];
+
+const icons: Record<string, string> = {
+  'chart-bar': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 13h2v8H3v-8Zm7-5h2v13h-2V8Zm7-4h2v17h-2V4Z"/>',
+  'cube': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m21 16-9 5-9-5V8l9-5 9 5v8Z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m3 8 9 5 9-5M12 13v8"/>',
+  'users': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 3.46a4 4 0 0 1 0 7.08M18 16.5c1.13.38 2 1.08 2 2.5v2h-3M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM5 21v-2c0-2.21 1.79-4 4-4h2c2.21 0 4 1.79 4 4v2H5Z"/>',
+  'document-text': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z"/>',
+  'credit-card': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h2m4 0h4M5 6h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/>',
+  'chart-pie': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 3.06A9 9 0 0 0 3.06 11H11V3.06ZM20.94 13A9 9 0 1 1 13 3.06V13h7.94Z"/>',
+};
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} | Lendix Admin</title>
+    <meta name="description" content="Panel de administración interno de Lendix" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+
+  <body class="admin-body">
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="admin-sidebar-logo">
+        <a href="/admin" class="flex items-center gap-2">
+          <Logo />
+        </a>
+        <span class="badge badge-admin ml-auto text-[0.6rem]">Admin</span>
+      </div>
+
+      <nav class="admin-sidebar-nav" aria-label="Navegación admin">
+        {navItems.map((section) => (
+          <>
+            <div class="admin-sidebar-section">{section.section}</div>
+            {section.items.map((item) => (
+              <a
+                href={item.href}
+                class={`admin-sidebar-link ${activePage === item.id ? 'active' : ''}`}
+              >
+                <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" set:html={icons[item.icon]} />
+                {item.label}
+              </a>
+            ))}
+          </>
+        ))}
+      </nav>
+
+      <div class="admin-sidebar-footer">
+        <a href="/" class="admin-sidebar-link" title="Volver al sitio">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          Volver al sitio
+        </a>
+        <a href="/auth/logout" class="admin-sidebar-link" title="Cerrar sesión">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          Cerrar sesión
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="admin-main">
+      <!-- Topbar -->
+      <header class="admin-topbar">
+        <div class="flex items-center gap-3">
+          <!-- Mobile hamburger -->
+          <button
+            id="sidebar-toggle"
+            class="lg:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-hairline bg-white text-ink hover:bg-cream transition-colors"
+            aria-label="Abrir menú"
+          >
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16M4 12h16M4 17h16"/>
+            </svg>
+          </button>
+
+          <!-- Breadcrumb -->
+          <nav aria-label="Breadcrumb" class="flex items-center gap-1.5 text-sm">
+            <a href="/admin" class="text-slate-muted hover:text-flame-500 transition-colors">Admin</a>
+            {activePage && activePage !== 'dashboard' && (
+              <>
+                <svg class="w-3.5 h-3.5 text-hairline" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span class="font-semibold text-ink capitalize">{activePage}</span>
+              </>
+            )}
+          </nav>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="hidden sm:block text-right">
+            <p class="text-sm font-semibold text-ink">{userProfile.full_name || user?.email}</p>
+            <p class="text-xs text-slate-muted capitalize">{userProfile.role}</p>
+          </div>
+          {user?.user_metadata?.avatar_url ? (
+            <img
+              src={user.user_metadata.avatar_url}
+              alt={userProfile.full_name || 'Admin'}
+              class="w-9 h-9 rounded-full border-2 border-white shadow-sm object-cover"
+            />
+          ) : (
+            <div class="w-9 h-9 rounded-full bg-flame-100 flex items-center justify-center text-flame-600 font-display text-sm font-bold border-2 border-white shadow-sm">
+              {(userProfile.full_name || user?.email || '?')[0].toUpperCase()}
+            </div>
+          )}
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main class="admin-content">
+        <slot />
+      </main>
+    </div>
+
+    <!-- Sidebar toggle script -->
+    <script is:inline>
+      (function() {
+        const sidebar = document.getElementById('admin-sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const toggle = document.getElementById('sidebar-toggle');
+
+        function openSidebar() {
+          sidebar.classList.add('open');
+          overlay.classList.add('active');
+          document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('active');
+          document.body.style.overflow = '';
+        }
+
+        if (toggle) toggle.addEventListener('click', openSidebar);
+        if (overlay) overlay.addEventListener('click', closeSidebar);
+
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape') closeSidebar();
+        });
+      })();
+    </script>
+  </body>
+</html>

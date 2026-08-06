@@ -1,0 +1,335 @@
+---
+export const prerender = false;
+
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import { createClient } from '@supabase/supabase-js';
+
+const user = Astro.locals.user;
+if (!user) {
+  return Astro.redirect('/');
+}
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+
+const supabase = createClient(
+  supabaseUrl,
+  supabaseKey,
+  { global: { headers: { Authorization: `Bearer ${accessToken}` } } }
+);
+
+// Fetch user's rental applications
+const { data: rentals } = await supabase
+  .from('rental_applications')
+  .select('*')
+  .eq('user_id', user.id)
+  .order('created_at', { ascending: false });
+
+// Fetch user's payments
+const { data: payments } = await supabase
+  .from('rental_payments')
+  .select('*')
+  .eq('user_id', user.id)
+  .order('due_date', { ascending: true });
+
+const activeRentals = rentals?.filter(r => r.status === 'approved').length || 0;
+const totalRentals = rentals?.length || 0;
+const pendingPayments = payments?.filter(p => p.status === 'pending') || [];
+const nextPaymentDate = pendingPayments.length > 0 
+  ? new Date(pendingPayments[0].due_date).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' }) 
+  : 'Sin pagos pendientes';
+
+const statusConfig: Record<string, { label: string, classes: string }> = {
+  pending: { label: 'Pendiente', classes: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+  reviewing: { label: 'En revisión', classes: 'bg-blue-100 text-blue-800 border-blue-200' },
+  approved: { label: 'Aprobada', classes: 'bg-green-100 text-green-800 border-green-200' },
+  rejected: { label: 'Rechazada', classes: 'bg-red-100 text-red-800 border-red-200' },
+  cancelled: { label: 'Cancelada', classes: 'bg-gray-100 text-gray-800 border-gray-200' },
+};
+
+const paymentStatusConfig: Record<string, { label: string, classes: string }> = {
+  pending: { label: 'Pendiente', classes: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+  paid: { label: 'Pagado', classes: 'bg-green-100 text-green-800 border-green-200' },
+  overdue: { label: 'Atrasado', classes: 'bg-red-100 text-red-800 border-red-200' },
+};
+---
+
+<Base title="Mi Cuenta | Lendix">
+  <div class="min-h-screen bg-cream">
+    <Nav variant="app" />
+    <main class="container-x py-12 md:py-24">
+      <div class="max-w-4xl mx-auto space-y-12">
+        <!-- Profile Header -->
+        <section class="flex flex-col md:flex-row items-center md:items-start gap-8 bg-white p-8 rounded-4xl border border-hairline shadow-sm">
+          <div class="shrink-0">
+            {user.user_metadata?.avatar_url ? (
+              <img 
+                src={user.user_metadata.avatar_url} 
+                alt={user.user_metadata.full_name || 'Usuario'} 
+                class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
+              />
+            ) : (
+              <div class="w-20 h-20 rounded-full border-4 border-white shadow-lg bg-flame-100 flex items-center justify-center text-flame-600 font-display text-2xl font-bold">
+                {(user.user_metadata?.full_name || user.email || '?')[0].toUpperCase()}
+              </div>
+            )}
+          </div>
+          <div class="flex-1 text-center md:text-left w-full">
+            <h1 class="font-display text-2xl font-bold text-ink mb-1">{user.user_metadata?.full_name || 'Mi Cuenta'}</h1>
+            <p class="text-ink-soft mb-6">{user.email}</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="bg-cream-deep/50 p-4 rounded-3xl border border-hairline">
+                <p class="text-sm font-semibold text-ink-soft mb-1">Total Solicitudes</p>
+                <p class="font-display text-2xl font-bold text-ink">{totalRentals}</p>
+              </div>
+              <div class="bg-cream-deep/50 p-4 rounded-3xl border border-hairline">
+                <p class="text-sm font-semibold text-ink-soft mb-1">Rentas Activas</p>
+                <p class="font-display text-2xl font-bold text-ink">{activeRentals}</p>
+              </div>
+              <div class="bg-cream-deep/50 p-4 rounded-3xl border border-hairline">
+                <p class="text-sm font-semibold text-ink-soft mb-1">Próximo Pago</p>
+                <p class="font-display text-lg font-bold text-ink">{nextPaymentDate}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tab Navigation -->
+        <div class="flex justify-center md:justify-start">
+          <div class="inline-flex rounded-full border border-hairline bg-cream p-1 shadow-sm">
+            <button class="tab-btn rounded-full px-5 py-2.5 text-sm font-semibold transition-all data-[active=true]:bg-white data-[active=true]:text-ink data-[active=true]:shadow-sm text-ink-soft hover:text-ink" data-target="rentas" data-active="true">
+              Mis Rentas
+            </button>
+            <button class="tab-btn rounded-full px-5 py-2.5 text-sm font-semibold transition-all data-[active=true]:bg-white data-[active=true]:text-ink data-[active=true]:shadow-sm text-ink-soft hover:text-ink" data-target="pagos" data-active="false">
+              Pagos
+            </button>
+            <button class="tab-btn rounded-full px-5 py-2.5 text-sm font-semibold transition-all data-[active=true]:bg-white data-[active=true]:text-ink data-[active=true]:shadow-sm text-ink-soft hover:text-ink" data-target="perfil" data-active="false">
+              Mi Perfil
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="relative">
+          <!-- Mis Rentas Tab -->
+          <div id="tab-rentas" class="tab-content block animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {(!rentals || rentals.length === 0) ? (
+              <div class="card-surface rounded-3xl p-12 border border-hairline text-center flex flex-col items-center justify-center">
+                <div class="w-16 h-16 bg-cream rounded-full flex items-center justify-center mb-4 border border-hairline">
+                  <svg class="w-8 h-8 text-ink-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </div>
+                <h3 class="font-display text-xl font-bold text-ink mb-2">Aún no tienes solicitudes</h3>
+                <p class="text-ink-soft mb-6 max-w-sm">Explora nuestro catálogo y encuentra el equipo perfecto para tu próximo proyecto.</p>
+                <a href="/catalogo" class="inline-flex items-center justify-center rounded-full bg-flame-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-flame-600 transition-colors">
+                  Ir al catálogo
+                </a>
+              </div>
+            ) : (
+              <div class="space-y-6">
+                {rentals.map((rental) => (
+                  <div class="card-surface rounded-3xl p-6 md:p-8 border border-hairline hover:shadow-sm transition-shadow" id={`rental-${rental.id}`}>
+                    <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                      <div>
+                        <div class="flex items-center gap-3 mb-2">
+                          <h3 class="font-display text-lg font-bold text-ink">{rental.product_name}</h3>
+                          <span class={`status-badge px-2.5 py-0.5 rounded-full text-xs font-semibold border ${statusConfig[rental.status]?.classes || 'bg-gray-100 text-gray-800'}`}>
+                            {statusConfig[rental.status]?.label || rental.status}
+                          </span>
+                        </div>
+                        <p class="text-ink-soft text-sm mb-4">Plan de {rental.months} meses • Solicitado el {new Date(rental.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        
+                        <div class="flex items-baseline gap-1">
+                          <span class="font-display text-2xl font-bold text-flame-500">${rental.monthly_rent}</span>
+                          <span class="text-sm text-ink-soft font-semibold">/mes</span>
+                        </div>
+                      </div>
+                      
+                      {rental.status === 'pending' && (
+                        <div class="cancel-action mt-4 md:mt-0 md:text-right flex-shrink-0">
+                          <button 
+                            class="cancel-btn text-sm font-semibold text-red-500 hover:text-red-700 transition-colors flex items-center gap-1 py-1.5 px-3 rounded-full hover:bg-red-50"
+                            data-id={rental.id}
+                          >
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Cancelar solicitud
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <!-- Pagos Tab -->
+          <div id="tab-pagos" class="tab-content hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {(!payments || payments.length === 0) ? (
+               <div class="card-surface rounded-3xl p-12 border border-hairline text-center flex flex-col items-center justify-center">
+                <div class="w-16 h-16 bg-cream rounded-full flex items-center justify-center mb-4 border border-hairline">
+                  <svg class="w-8 h-8 text-ink-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 class="font-display text-xl font-bold text-ink mb-2">No tienes pagos registrados</h3>
+                <p class="text-ink-soft mb-6 max-w-sm">Tus pagos aparecerán aquí una vez que tengas una renta activa.</p>
+              </div>
+            ) : (
+              <div class="card-surface rounded-3xl border border-hairline overflow-hidden">
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead class="bg-cream-deep/50 border-b border-hairline">
+                      <tr>
+                        <th class="px-6 py-4 font-semibold text-ink-soft">Cuota</th>
+                        <th class="px-6 py-4 font-semibold text-ink-soft">Producto</th>
+                        <th class="px-6 py-4 font-semibold text-ink-soft">Monto</th>
+                        <th class="px-6 py-4 font-semibold text-ink-soft">Vencimiento</th>
+                        <th class="px-6 py-4 font-semibold text-ink-soft">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-hairline">
+                      {payments.map(payment => (
+                        <tr class="hover:bg-cream-deep/20 transition-colors">
+                          <td class="px-6 py-4 font-medium text-ink">{payment.installment_number}</td>
+                          <td class="px-6 py-4 text-ink">{payment.product_name || 'Renta de Equipo'}</td>
+                          <td class="px-6 py-4 font-bold text-ink">${payment.amount}</td>
+                          <td class="px-6 py-4 text-ink-soft">{new Date(payment.due_date).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                          <td class="px-6 py-4">
+                            <span class={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${paymentStatusConfig[payment.status]?.classes || 'bg-gray-100 text-gray-800'}`}>
+                              {paymentStatusConfig[payment.status]?.label || payment.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <!-- Mi Perfil Tab -->
+          <div id="tab-perfil" class="tab-content hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div class="card-surface rounded-3xl p-8 md:p-10 border border-hairline max-w-2xl">
+              <h3 class="font-display text-xl font-bold text-ink mb-6">Información Personal</h3>
+              
+              <div class="space-y-6">
+                <div>
+                  <label class="block text-sm font-semibold text-ink-soft mb-2">Nombre completo</label>
+                  <div class="w-full bg-cream-deep/30 border border-hairline rounded-xl px-4 py-3 text-ink">
+                    {user.user_metadata?.full_name || 'No especificado'}
+                  </div>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-semibold text-ink-soft mb-2">Email</label>
+                  <div class="w-full bg-cream-deep/30 border border-hairline rounded-xl px-4 py-3 text-ink">
+                    {user.email}
+                  </div>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-semibold text-ink-soft mb-2">Miembro desde</label>
+                  <div class="w-full bg-cream-deep/30 border border-hairline rounded-xl px-4 py-3 text-ink">
+                    {new Date(user.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-8 pt-8 border-t border-hairline flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-sm text-ink-soft text-center md:text-left">
+                  Para cambiar tus datos, contacta soporte en <a href="mailto:hola@lendix.app" class="text-flame-500 hover:underline">hola@lendix.app</a>
+                </p>
+                <a href="/auth/logout" class="inline-flex items-center justify-center rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 px-6 py-2.5 text-sm font-semibold transition-colors">
+                  Cerrar sesión
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</Base>
+
+<script is:inline define:vars={{ supabaseUrl, supabaseKey, accessToken }}>
+  // Tab Switching Logic
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Deactivate all
+      tabBtns.forEach(b => b.setAttribute('data-active', 'false'));
+      tabContents.forEach(c => c.classList.add('hidden'));
+      
+      // Activate clicked
+      btn.setAttribute('data-active', 'true');
+      const targetId = `tab-${btn.dataset.target}`;
+      document.getElementById(targetId)?.classList.remove('hidden');
+    });
+  });
+
+  // Cancel Rental Application Logic
+  const cancelBtns = document.querySelectorAll('.cancel-btn');
+  
+  cancelBtns.forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = btn.dataset.id;
+      if (!id) return;
+      
+      if (!confirm('¿Estás seguro de que deseas cancelar esta solicitud?')) {
+        return;
+      }
+      
+      btn.textContent = 'Cancelando...';
+      btn.disabled = true;
+      
+      try {
+        const response = await fetch(`${supabaseUrl}/rest/v1/rental_applications?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({ 
+            status: 'cancelled',
+            cancelled_at: new Date().toISOString()
+          })
+        });
+        
+        if (response.ok) {
+          // Update UI
+          const rentalCard = document.getElementById(`rental-${id}`);
+          if (rentalCard) {
+            const badge = rentalCard.querySelector('.status-badge');
+            if (badge) {
+              badge.textContent = 'Cancelada';
+              badge.className = 'status-badge px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-gray-100 text-gray-800 border-gray-200';
+            }
+            const actionContainer = rentalCard.querySelector('.cancel-action');
+            if (actionContainer) {
+              actionContainer.remove();
+            }
+          }
+        } else {
+          throw new Error('Failed to cancel');
+        }
+      } catch (error) {
+        console.error('Error cancelling rental:', error);
+        alert('Hubo un error al cancelar la solicitud. Inténtalo de nuevo.');
+        btn.textContent = 'Cancelar solicitud';
+        btn.disabled = false;
+      }
+    });
+  });
+</script>

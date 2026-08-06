@@ -1,6 +1,13 @@
 ---
 import Logo from './Logo.astro';
 
+interface Props {
+  /** 'landing' muestra los links de sección. 'app' muestra solo logo + auth. */
+  variant?: 'landing' | 'app';
+}
+
+const { variant = 'landing' } = Astro.props;
+
 const links = [
   { href: '#catalogo', label: 'Catalogo' },
   { href: '#como-funciona', label: 'Como funciona' },
@@ -16,28 +23,56 @@ const links = [
 >
   <div class="container-x">
     <div class="flex h-[4.5rem] items-center justify-between gap-6">
-      <a href="#top" class="shrink-0" aria-label="Lendix — inicio">
+      <a href={variant === 'app' ? '/' : '#top'} class="shrink-0" aria-label="Lendix — inicio">
         <Logo />
       </a>
 
-      <nav aria-label="Principal" class="hidden lg:block lg:ml-auto">
-        <ul class="flex items-center gap-1">
-          {
-            links.map((link) => (
-              <li>
-                <a
-                  href={link.href}
-                  class="rounded-full px-3.5 py-2 text-[0.9rem] font-medium text-ink-soft transition-colors hover:bg-flame-50 hover:text-flame-700"
-                >
-                  {link.label}
-                </a>
-              </li>
-            ))
-          }
-        </ul>
-      </nav>
+      {variant === 'landing' && (
+        <nav aria-label="Principal" class="hidden lg:block lg:ml-auto">
+          <ul class="flex items-center gap-1">
+            {
+              links.map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    class="rounded-full px-3.5 py-2 text-[0.9rem] font-medium text-ink-soft transition-colors hover:bg-flame-50 hover:text-flame-700"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+      )}
 
       <div class="flex items-center gap-2">
+        <!-- Logged out state -->
+        <a id="nav-login" href="#" class="inline-flex rounded-full border border-hairline bg-white/80 px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-flame-50 hover:text-flame-600">
+          Iniciar sesión
+        </a>
+
+        <!-- Logged in state -->
+        <div id="nav-user" class="relative hidden items-center gap-2">
+          <button id="nav-avatar-btn" class="flex items-center gap-2 rounded-full border border-hairline bg-white/80 p-1 pr-3 text-sm font-medium text-ink transition-colors hover:bg-flame-50 hover:text-flame-600">
+            <img id="nav-avatar-img" src="" alt="" class="h-9 w-9 rounded-full border-2 border-white object-cover shadow-sm" />
+            <span id="nav-user-name" class="hidden lg:inline text-sm font-medium text-ink">...</span>
+            <svg class="h-4 w-4 text-ink-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          <!-- Dropdown -->
+          <div id="nav-dropdown" class="card-surface absolute right-0 top-full mt-2 hidden min-w-40 rounded-2xl border border-hairline p-2 shadow-xl">
+            <a id="nav-dashboard-link" href="/admin" class="hidden rounded-xl px-4 py-2 text-sm text-ink hover:bg-flame-50 hover:text-flame-600 items-center gap-2">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 13h2v8H3v-8Zm7-5h2v13h-2V8Zm7-4h2v17h-2V4Z"/></svg>
+              Dashboard
+            </a>
+            <a href="/mi-cuenta" class="block rounded-xl px-4 py-2 text-sm text-ink hover:bg-flame-50 hover:text-flame-600">Mi cuenta</a>
+            <a href="/auth/logout" class="block rounded-xl px-4 py-2 text-sm text-ink hover:bg-flame-50 hover:text-flame-600">Cerrar sesión</a>
+          </div>
+        </div>
+
         <button
           type="button"
           class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-hairline bg-white/80 text-ink lg:hidden"
@@ -72,9 +107,121 @@ const links = [
           ))
         }
       </ul>
+      
+      <div id="nav-mobile-auth" class="hidden mt-2 border-t border-hairline pt-2">
+        <a id="nav-mobile-dashboard-link" href="/admin" class="hidden rounded-2xl px-4 py-3 text-[0.95rem] font-medium text-flame-600 transition-colors hover:bg-flame-50 hover:text-flame-700">Dashboard</a>
+        <a href="/mi-cuenta" class="block rounded-2xl px-4 py-3 text-[0.95rem] font-medium text-ink-soft transition-colors hover:bg-flame-50 hover:text-flame-700">Mi cuenta</a>
+        <a href="/auth/logout" class="block rounded-2xl px-4 py-3 text-[0.95rem] font-medium text-ink-soft transition-colors hover:bg-flame-50 hover:text-flame-700">Cerrar sesión</a>
+      </div>
+      <a id="nav-mobile-login" href="#" class="block rounded-2xl px-4 py-3 text-[0.95rem] font-medium text-ink-soft transition-colors hover:bg-flame-50 hover:text-flame-700 mt-2 border-t border-hairline pt-2">
+        Iniciar sesión con Google
+      </a>
     </nav>
   </div>
 </header>
+
+<script>
+  import { supabase, initSessionFromCookies, signOutClient } from '../lib/supabase';
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const session = await initSessionFromCookies();
+    
+    const loginBtn = document.getElementById('nav-login');
+    const userDiv = document.getElementById('nav-user');
+    const avatarImg = document.getElementById('nav-avatar-img') as HTMLImageElement;
+    const userName = document.getElementById('nav-user-name');
+    const avatarBtn = document.getElementById('nav-avatar-btn');
+    const dropdown = document.getElementById('nav-dropdown');
+    
+    const mobileAuth = document.getElementById('nav-mobile-auth');
+    const mobileLoginBtn = document.getElementById('nav-mobile-login');
+
+    if (session) {
+      if (loginBtn) loginBtn.classList.replace('inline-flex', 'hidden');
+      if (mobileLoginBtn) mobileLoginBtn.classList.add('hidden');
+      
+      if (userDiv) {
+        userDiv.classList.remove('hidden');
+        userDiv.classList.add('flex');
+      }
+      if (mobileAuth) mobileAuth.classList.remove('hidden');
+
+      if (avatarImg && session.user.user_metadata?.avatar_url) {
+        avatarImg.src = session.user.user_metadata.avatar_url;
+      }
+      if (userName && session.user.user_metadata?.full_name) {
+        userName.textContent = session.user.user_metadata.full_name;
+      }
+
+      // Mostrar enlace "Dashboard" si el usuario es admin/superadmin
+      try {
+        // Usar createClient con el token de sesión activo para bypassear RLS correctamente
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile && (profile.role === 'admin' || profile.role === 'superadmin')) {
+          const dashboardLink = document.getElementById('nav-dashboard-link');
+          const mobileDashboardLink = document.getElementById('nav-mobile-dashboard-link');
+          if (dashboardLink) {
+            dashboardLink.classList.remove('hidden');
+            dashboardLink.classList.add('flex');
+          }
+          if (mobileDashboardLink) {
+            mobileDashboardLink.classList.remove('hidden');
+            mobileDashboardLink.classList.add('block');
+          }
+        }
+      } catch (e) {
+        console.error('[Nav] Error checking role:', e);
+      }
+    }
+
+    // Login con Google
+    const signIn = (e: Event) => {
+      e.preventDefault();
+      supabase.auth.signInWithOAuth({ 
+        provider: 'google', 
+        options: { 
+          redirectTo: window.location.origin + '/auth/callback?next=' + encodeURIComponent(window.location.pathname) 
+        } 
+      });
+    };
+
+    if (loginBtn) loginBtn.addEventListener('click', signIn);
+    if (mobileLoginBtn) mobileLoginBtn.addEventListener('click', signIn);
+
+    // Logout: limpiar client-side primero, luego server-side
+    document.querySelectorAll('a[href="/auth/logout"]').forEach(link => {
+      link.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await signOutClient();
+        window.location.href = '/auth/logout';
+      });
+    });
+
+    // Dropdown toggle
+    if (avatarBtn && dropdown && userDiv) {
+      avatarBtn.addEventListener('click', () => {
+        dropdown.classList.toggle('hidden');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!userDiv.contains(e.target as Node)) {
+          dropdown.classList.add('hidden');
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          dropdown.classList.add('hidden');
+        }
+      });
+    }
+  });
+</script>
 
 <script is:inline>
   (function () {

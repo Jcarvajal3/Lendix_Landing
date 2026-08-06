@@ -1,0 +1,458 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { supabaseAdmin } from '../../lib/supabase-admin';
+
+// Verify admin access
+const userProfile = Astro.locals.userProfile;
+if (!userProfile || (userProfile.role !== 'admin' && userProfile.role !== 'superadmin')) {
+  return Astro.redirect('/login');
+}
+
+// Fetch all data
+const { data: applicationsData } = await supabaseAdmin.from('rental_applications').select('*');
+const { data: paymentsData } = await supabaseAdmin.from('rental_payments').select('*');
+const { data: usersData } = await supabaseAdmin.from('user_profiles').select('*');
+const { data: leadsData } = await supabaseAdmin.from('waitlist_lead').select('*');
+
+const applications = applicationsData || [];
+const payments = paymentsData || [];
+const users = usersData || [];
+const leads = leadsData || [];
+
+// -------------------------------------------------------------
+// A. Revenue Analytics
+// -------------------------------------------------------------
+const paidPayments = payments.filter(p => p.status === 'paid' && p.paid_at);
+const totalRevenueAllTime = paidPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+
+// Last 6 months revenue
+const now = new Date();
+const last6Months = Array.from({ length: 6 }).map((_, i) => {
+  const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+  return {
+    label: d.toLocaleDateString('es-CO', { month: 'short', year: '2-digit' }).replace('.', ''),
+    month: d.getMonth(),
+    year: d.getFullYear(),
+    revenue: 0
+  };
+}).reverse();
+
+paidPayments.forEach(p => {
+  const date = new Date(p.paid_at);
+  const month = last6Months.find(m => m.month === date.getMonth() && m.year === date.getFullYear());
+  if (month) {
+    month.revenue += Number(p.amount);
+  }
+});
+
+const maxRevenue = Math.max(...last6Months.map(m => m.revenue), 1);
+const currentMonthRevenue = last6Months[5]?.revenue || 0;
+const prevMonthRevenue = last6Months[4]?.revenue || 0;
+
+// Unique months calculation for avg
+const uniqueMonths = new Set(paidPayments.map(p => {
+  const d = new Date(p.paid_at);
+  return `${d.getFullYear()}-${d.getMonth()}`;
+})).size;
+const avgRevenuePerMonth = uniqueMonths > 0 ? totalRevenueAllTime / uniqueMonths : 0;
+
+const revenueGrowthRate = prevMonthRevenue > 0 
+  ? ((currentMonthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100 
+  : 0;
+
+// -------------------------------------------------------------
+// B. Product Analytics
+// -------------------------------------------------------------
+const productStats = {};
+applications.forEach(app => {
+  if (!productStats[app.product_slug]) {
+    productStats[app.product_slug] = {
+      name: app.product_name,
+      slug: app.product_slug,
+      totalRentals: 0,
+      revenueGenerated: 0,
+      avgMonthlyRent: 0
+    };
+  }
+  productStats[app.product_slug].totalRentals += 1;
+  productStats[app.product_slug].avgMonthlyRent += Number(app.monthly_rent || 0);
+});
+
+// Calculate revenue per product (join payments -> applications)
+const appToProduct = applications.reduce((acc, app) => {
+  acc[app.id] = app.product_slug;
+  return acc;
+}, {});
+
+paidPayments.forEach(p => {
+  const slug = appToProduct[p.rental_id];
+  if (slug && productStats[slug]) {
+    productStats[slug].revenueGenerated += Number(p.amount);
+  }
+});
+
+const productsArray = Object.values(productStats).map(p => ({
+  ...p,
+  avgMonthlyRent: p.totalRentals > 0 ? p.avgMonthlyRent / p.totalRentals : 0
+})).sort((a, b) => b.totalRentals - a.totalRentals);
+
+const mostRentedProducts = [...productsArray].slice(0, 3);
+const highestRevenueProducts = [...productsArray].sort((a, b) => b.revenueGenerated - a.revenueGenerated).slice(0, 3);
+
+// -------------------------------------------------------------
+// C. User Analytics
+// -------------------------------------------------------------
+const totalLeads = leads.length;
+const totalRegistrations = users.length;
+const totalApplications = applications.length;
+const totalApproved = applications.filter(a => a.status === 'approved').length;
+
+const funnel = {
+  leads: totalLeads,
+  registrations: totalRegistrations,
+  applications: totalApplications,
+  approved: totalApproved
+};
+
+const pReg = funnel.leads > 0 ? (funnel.registrations / funnel.leads) * 100 : 0;
+const pApp = funnel.registrations > 0 ? (funnel.applications / funnel.registrations) * 100 : 0;
+const pApproved = funnel.applications > 0 ? (funnel.approved / funnel.applications) * 100 : 0;
+
+const usersWithApprovedApp = new Set(applications.filter(a => a.status === 'approved').map(a => a.user_id));
+const activeUsers = usersWithApprovedApp.size;
+const inactiveUsers = Math.max(0, users.length - activeUsers);
+
+// New users per month
+const newUsersLast6Months = last6Months.map(m => ({ ...m, count: 0 }));
+users.forEach(u => {
+  const date = new Date(u.created_at);
+  const month = newUsersLast6Months.find(m => m.month === date.getMonth() && m.year === date.getFullYear());
+  if (month) {
+    month.count += 1;
+  }
+});
+const maxNewUsers = Math.max(...newUsersLast6Months.map(m => m.count), 1);
+
+// -------------------------------------------------------------
+// D. Payment Health
+// -------------------------------------------------------------
+const allPayments = payments;
+const overduePayments = payments.filter(p => p.status === 'overdue');
+const pendingPayments = payments.filter(p => p.status === 'pending');
+const overdueAmount = overduePayments.reduce((sum, p) => sum + Number(p.amount), 0);
+
+const delinquencyRate = allPayments.length > 0 ? (overduePayments.length / allPayments.length) * 100 : 0;
+const collectionRate = (paidPayments.length + overduePayments.length) > 0 
+  ? (paidPayments.length / (paidPayments.length + overduePayments.length)) * 100 
+  : 0;
+
+let totalDaysToPayment = 0;
+let paymentsWithDays = 0;
+paidPayments.forEach(p => {
+  if (p.due_date && p.paid_at) {
+    const due = new Date(p.due_date);
+    const paid = new Date(p.paid_at);
+    // Remove time portion for fair days calculation
+    const diffTime = new Date(paid.toDateString()).getTime() - new Date(due.toDateString()).getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    totalDaysToPayment += diffDays;
+    paymentsWithDays++;
+  }
+});
+const avgDaysToPayment = paymentsWithDays > 0 ? totalDaysToPayment / paymentsWithDays : 0;
+
+// Formatting helpers
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
+};
+const formatNumber = (num) => {
+  return new Intl.NumberFormat('es-CO').format(num);
+};
+
+// Trend helper
+const getTrendClass = (val, isPositiveGood = true) => {
+  if (val === 0) return 'text-neutral-500';
+  if (isPositiveGood) return val > 0 ? 'text-green-600' : 'text-red-600';
+  return val > 0 ? 'text-red-600' : 'text-green-600';
+};
+---
+
+<AdminLayout title="Métricas" activePage="metricas">
+  <div class="space-y-8 admin-animate-in">
+    
+    <!-- HEADER -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-display font-bold text-ink">Business Intelligence</h1>
+        <p class="text-neutral-600 mt-1">Analytics y rendimiento del negocio</p>
+      </div>
+    </div>
+
+    <!-- A. REVENUE ANALYTICS -->
+    <section>
+      <div class="mb-4">
+        <h2 class="text-xl font-bold font-display text-ink">A. Rendimiento de Ingresos</h2>
+        <p class="text-sm text-neutral-500">Resumen de ingresos generados y proyecciones</p>
+      </div>
+      
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="kpi-card flex flex-col justify-between p-6 bg-white border border-neutral-200 rounded-xl shadow-sm">
+          <div>
+            <p class="text-sm font-medium text-neutral-500">Ingresos Totales (Histórico)</p>
+            <h3 class="text-3xl font-bold text-ink mt-2">{formatCurrency(totalRevenueAllTime)}</h3>
+          </div>
+          <div class="mt-4 pt-4 border-t border-neutral-100 flex justify-between items-center">
+            <div>
+              <p class="text-xs text-neutral-500">Promedio Mensual</p>
+              <p class="text-sm font-medium text-ink">{formatCurrency(avgRevenuePerMonth)}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs text-neutral-500">Crecimiento MoM</p>
+              <p class={`text-sm font-bold flex items-center justify-end ${getTrendClass(revenueGrowthRate)}`}>
+                {revenueGrowthRate > 0 ? '↑' : revenueGrowthRate < 0 ? '↓' : ''}
+                {Math.abs(revenueGrowthRate).toFixed(1)}%
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-2 kpi-card p-6 bg-white border border-neutral-200 rounded-xl shadow-sm">
+          <p class="text-sm font-medium text-neutral-500 mb-4">Ingresos Últimos 6 Meses</p>
+          <div class="flex items-end h-48 space-x-2">
+            {last6Months.map(month => (
+              <div class="flex-1 flex flex-col items-center group relative">
+                <div class="w-full bg-flame-500 rounded-t-sm transition-all hover:bg-flame-600" 
+                     style={`height: ${month.revenue > 0 ? (month.revenue / maxRevenue) * 100 : 2}%;`}
+                     title={formatCurrency(month.revenue)}>
+                </div>
+                <div class="mt-2 text-xs text-neutral-500 font-medium capitalize">{month.label}</div>
+                
+                <!-- Tooltip -->
+                <div class="absolute -top-10 hidden group-hover:block bg-ink text-cream text-xs py-1 px-2 rounded whitespace-nowrap z-10">
+                  {formatCurrency(month.revenue)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- B. PRODUCT ANALYTICS -->
+    <section>
+      <div class="mb-4">
+        <h2 class="text-xl font-bold font-display text-ink">B. Analytics de Productos</h2>
+        <p class="text-sm text-neutral-500">Rendimiento por categoría y modelo de producto</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {mostRentedProducts.map((p, i) => (
+          <div class="kpi-card p-6 bg-white border border-neutral-200 rounded-xl shadow-sm">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs font-bold text-flame-500 tracking-wider uppercase">Top {i + 1} Rentado</p>
+                <h3 class="text-lg font-bold text-ink mt-1 truncate" title={p.name}>{p.name}</h3>
+              </div>
+              <span class="bg-neutral-100 text-neutral-800 text-xs px-2 py-1 rounded-full font-medium">
+                {p.totalRentals} rentas
+              </span>
+            </div>
+            <div class="mt-4 pt-4 border-t border-neutral-100">
+              <p class="text-sm text-neutral-500">Ingresos generados: <span class="font-bold text-ink">{formatCurrency(p.revenueGenerated)}</span></p>
+            </div>
+          </div>
+        ))}
+        {mostRentedProducts.length === 0 && (
+          <div class="col-span-3 text-center py-8 text-neutral-500">No hay datos de productos rentados aún.</div>
+        )}
+      </div>
+
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th class="text-right">Total Rentas</th>
+              <th class="text-right">Renta Mensual Prom.</th>
+              <th class="text-right">Ingresos Generados</th>
+            </tr>
+          </thead>
+          <tbody>
+            {productsArray.map(p => (
+              <tr>
+                <td class="font-medium">{p.name}</td>
+                <td class="text-right">{formatNumber(p.totalRentals)}</td>
+                <td class="text-right">{formatCurrency(p.avgMonthlyRent)}</td>
+                <td class="text-right font-medium text-green-700">{formatCurrency(p.revenueGenerated)}</td>
+              </tr>
+            ))}
+            {productsArray.length === 0 && (
+              <tr>
+                <td colspan="4" class="text-center py-4 text-neutral-500">No hay datos suficientes</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- C. USER ANALYTICS -->
+    <section>
+      <div class="mb-4">
+        <h2 class="text-xl font-bold font-display text-ink">C. Analytics de Usuarios</h2>
+        <p class="text-sm text-neutral-500">Adquisición, conversión y retención</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <div class="kpi-card p-6 bg-white border border-neutral-200 rounded-xl shadow-sm">
+          <p class="text-sm font-medium text-neutral-500 mb-4">Funnel de Conversión</p>
+          <div class="space-y-4">
+            
+            <div class="relative pt-1">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium text-ink">1. Leads (Waitlist)</span>
+                <span class="text-sm font-bold text-ink">{formatNumber(funnel.leads)}</span>
+              </div>
+              <div class="overflow-hidden h-4 text-xs flex rounded bg-neutral-100">
+                <div style="width: 100%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-neutral-300"></div>
+              </div>
+            </div>
+
+            <div class="relative pt-1">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium text-ink">2. Registros</span>
+                <span class="text-sm font-bold text-ink">{formatNumber(funnel.registrations)} <span class="text-xs text-neutral-500 font-normal">({pReg.toFixed(1)}%)</span></span>
+              </div>
+              <div class="overflow-hidden h-4 text-xs flex rounded bg-neutral-100">
+                <div style={`width: ${pReg}%`} class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-flame-300"></div>
+              </div>
+            </div>
+
+            <div class="relative pt-1">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium text-ink">3. Solicitudes de Renta</span>
+                <span class="text-sm font-bold text-ink">{formatNumber(funnel.applications)} <span class="text-xs text-neutral-500 font-normal">({pApp.toFixed(1)}%)</span></span>
+              </div>
+              <div class="overflow-hidden h-4 text-xs flex rounded bg-neutral-100">
+                <div style={`width: ${(funnel.applications/funnel.leads*100) || 0}%`} class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-flame-400"></div>
+              </div>
+            </div>
+
+            <div class="relative pt-1">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium text-ink">4. Rentas Aprobadas</span>
+                <span class="text-sm font-bold text-ink">{formatNumber(funnel.approved)} <span class="text-xs text-neutral-500 font-normal">({pApproved.toFixed(1)}%)</span></span>
+              </div>
+              <div class="overflow-hidden h-4 text-xs flex rounded bg-neutral-100">
+                <div style={`width: ${(funnel.approved/funnel.leads*100) || 0}%`} class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-flame-600"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="flex flex-col space-y-6">
+          <div class="kpi-card p-6 bg-white border border-neutral-200 rounded-xl shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-neutral-500">Usuarios Activos vs Inactivos</p>
+              <div class="mt-2 flex items-baseline gap-2">
+                <h3 class="text-3xl font-bold text-ink">{formatNumber(activeUsers)}</h3>
+                <span class="text-sm text-neutral-500">activos</span>
+              </div>
+              <p class="text-xs text-neutral-500 mt-1">{formatNumber(inactiveUsers)} registrados inactivos</p>
+            </div>
+            <div class="h-16 w-16 rounded-full border-4 border-neutral-100 flex items-center justify-center relative">
+              <svg viewBox="0 0 36 36" class="absolute inset-0 w-full h-full -rotate-90">
+                <path
+                  class="text-flame-500"
+                  stroke-dasharray={`${users.length > 0 ? (activeUsers / users.length) * 100 : 0}, 100`}
+                  d="M18 2.0845
+                    a 15.9155 15.9155 0 0 1 0 31.831
+                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="4"
+                />
+              </svg>
+              <span class="text-xs font-bold">{users.length > 0 ? Math.round((activeUsers/users.length)*100) : 0}%</span>
+            </div>
+          </div>
+
+          <div class="kpi-card p-6 bg-white border border-neutral-200 rounded-xl shadow-sm flex-1">
+            <p class="text-sm font-medium text-neutral-500 mb-4">Nuevos Usuarios (Últimos 6m)</p>
+            <div class="flex items-end h-24 space-x-2">
+              {newUsersLast6Months.map(month => (
+                <div class="flex-1 flex flex-col items-center group relative">
+                  <div class="w-full bg-ink rounded-t-sm opacity-80" 
+                       style={`height: ${month.count > 0 ? (month.count / maxNewUsers) * 100 : 2}%;`}>
+                  </div>
+                  <div class="mt-2 text-[10px] text-neutral-500 font-medium capitalize truncate w-full text-center">{month.label}</div>
+                  <div class="absolute -top-8 hidden group-hover:block bg-ink text-cream text-xs py-1 px-2 rounded whitespace-nowrap z-10">
+                    {month.count} usuarios
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- D. PAYMENT HEALTH -->
+    <section>
+      <div class="mb-4">
+        <h2 class="text-xl font-bold font-display text-ink">D. Salud de Pagos</h2>
+        <p class="text-sm text-neutral-500">Métricas de recaudo, morosidad y tiempos de pago</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        <div class="kpi-card p-6 bg-white border border-neutral-200 rounded-xl shadow-sm">
+          <p class="text-sm font-medium text-neutral-500">Tasa de Morosidad</p>
+          <div class="mt-2 flex items-center justify-between">
+            <h3 class={`text-3xl font-bold ${delinquencyRate > 15 ? 'text-red-600' : 'text-ink'}`}>
+              {delinquencyRate.toFixed(1)}%
+            </h3>
+          </div>
+          <p class="text-xs text-neutral-500 mt-2">Pagos atrasados / Total de pagos</p>
+        </div>
+
+        <div class="kpi-card p-6 bg-white border border-neutral-200 rounded-xl shadow-sm">
+          <p class="text-sm font-medium text-neutral-500">Tasa de Recaudo</p>
+          <div class="mt-2 flex items-center justify-between">
+            <h3 class={`text-3xl font-bold ${collectionRate >= 90 ? 'text-green-600' : 'text-ink'}`}>
+              {collectionRate.toFixed(1)}%
+            </h3>
+          </div>
+          <p class="text-xs text-neutral-500 mt-2">Pagos exitosos / Pagos exigibles</p>
+        </div>
+
+        <div class="kpi-card p-6 bg-white border border-neutral-200 rounded-xl shadow-sm">
+          <p class="text-sm font-medium text-neutral-500">Días al Pago (Promedio)</p>
+          <div class="mt-2 flex items-center justify-between">
+            <h3 class="text-3xl font-bold text-ink">
+              {avgDaysToPayment > 0 ? `+${avgDaysToPayment.toFixed(1)}` : avgDaysToPayment.toFixed(1)}
+            </h3>
+          </div>
+          <p class="text-xs text-neutral-500 mt-2">Días post-vencimiento (0 = al día)</p>
+        </div>
+
+        <div class="kpi-card p-6 bg-white border border-neutral-200 rounded-xl shadow-sm">
+          <p class="text-sm font-medium text-neutral-500">Saldo en Mora (Outstanding)</p>
+          <div class="mt-2 flex items-center justify-between">
+            <h3 class="text-2xl font-bold text-red-600 truncate" title={formatCurrency(overdueAmount)}>
+              {formatCurrency(overdueAmount)}
+            </h3>
+          </div>
+          <p class="text-xs text-neutral-500 mt-2">{formatNumber(overduePayments.length)} pagos vencidos</p>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+</AdminLayout>

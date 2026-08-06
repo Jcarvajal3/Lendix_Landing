@@ -1,0 +1,37 @@
+---
+export const prerender = false;
+
+import { createClient } from '@supabase/supabase-js';
+import { getSecureCookieOptions } from '../../lib/supabase';
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+const code = Astro.url.searchParams.get('code');
+
+// El redirect target puede venir como query param (?next=/mi-cuenta)
+// Por defecto redirige a completar-registro (flujo de renta)
+const next = Astro.url.searchParams.get('next') || '/completar-registro';
+
+if (code) {
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (!error && data.session) {
+    const { access_token, refresh_token } = data.session;
+    const cookieOpts = getSecureCookieOptions(import.meta.env.PROD);
+
+    Astro.cookies.set('sb-access-token', access_token, {
+      ...cookieOpts,
+      maxAge: 60 * 60, // 1 hora
+    });
+
+    Astro.cookies.set('sb-refresh-token', refresh_token, {
+      ...cookieOpts,
+      maxAge: 60 * 60 * 24 * 30, // 30 días
+    });
+  }
+}
+
+return Astro.redirect(next);
+---

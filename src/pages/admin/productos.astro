@@ -1,0 +1,264 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { products, firstMonthSaving } from '../../data/products';
+
+const totalProducts = products.length;
+const avgMonthly = Math.round(products.reduce((acc, p) => acc + p.monthly, 0) / (totalProducts || 1));
+
+const categories = [...new Set(products.map(p => p.category))];
+---
+<AdminLayout title="Productos" activePage="productos">
+  <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-display font-bold text-ink">Catálogo de Productos</h1>
+      <p class="text-sm text-slate-muted mt-1">
+        {totalProducts} productos listados · Precio promedio: ${avgMonthly}/mes
+      </p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-hairline overflow-hidden mb-6">
+    <div class="p-4 border-b border-hairline bg-slate-50 flex flex-col sm:flex-row gap-4">
+      <!-- Search -->
+      <div class="flex-1">
+        <div class="relative">
+          <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+          <input 
+            type="text" 
+            id="search-input" 
+            placeholder="Buscar por nombre..." 
+            class="w-full pl-10 pr-4 py-2 rounded-lg border border-hairline focus:border-flame-500 focus:ring-1 focus:ring-flame-500 outline-none transition-shadow text-sm"
+          >
+        </div>
+      </div>
+      <!-- Category -->
+      <div class="w-full sm:w-48">
+        <select id="category-filter" class="w-full px-4 py-2 rounded-lg border border-hairline focus:border-flame-500 focus:ring-1 focus:ring-flame-500 outline-none transition-shadow text-sm bg-white">
+          <option value="all">Todas las categorías</option>
+          {categories.map(c => (
+            <option value={c}>{c}</option>
+          ))}
+        </select>
+      </div>
+      <!-- Entrega -->
+      <div class="w-full sm:w-48">
+        <select id="entrega-filter" class="w-full px-4 py-2 rounded-lg border border-hairline focus:border-flame-500 focus:ring-1 focus:ring-flame-500 outline-none transition-shadow text-sm bg-white">
+          <option value="all">Cualquier entrega</option>
+          <option value="inmediata">Inmediata</option>
+          <option value="pedido">Bajo pedido</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="admin-table-container">
+      <table class="admin-table w-full text-left" id="products-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Precio Mensual</th>
+            <th>Precio Retail</th>
+            <th>Ahorro 1er Mes</th>
+            <th>Disponibilidad</th>
+            <th>Badge</th>
+            <th class="text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.map(p => (
+            <tr class="product-row" data-name={p.name.toLowerCase()} data-category={p.category} data-entrega={p.entrega}>
+              <td>
+                <div class="flex items-center gap-3">
+                  <img src={`/products/${p.slug}.webp`} alt={p.name} class="w-12 h-12 rounded-lg object-cover border border-hairline bg-slate-50" onerror="this.src='/favicon.svg'" />
+                  <div>
+                    <div class="font-medium text-ink">{p.name}</div>
+                    <div class="text-xs text-slate-muted">{p.category}</div>
+                  </div>
+                </div>
+              </td>
+              
+              <!-- Display cells -->
+              <td class="view-cell" data-field="monthly">
+                <span class="font-semibold text-ink">${p.monthly}</span><span class="text-xs text-slate-muted">/mes</span>
+              </td>
+              <td class="view-cell" data-field="retail">
+                ${p.retail}
+              </td>
+              <td class="view-cell savings-cell">
+                <span class="text-green-600 font-medium">${firstMonthSaving(p)}</span>
+              </td>
+              
+              <!-- Edit cells (hidden by default) -->
+              <td class="edit-cell hidden">
+                <div class="flex items-center gap-1">
+                  <span class="text-slate-muted">$</span>
+                  <input type="number" class="w-20 px-2 py-1 text-sm border border-hairline rounded focus:border-flame-500 outline-none edit-monthly" value={p.monthly} data-original={p.monthly} />
+                </div>
+              </td>
+              <td class="edit-cell hidden">
+                <div class="flex items-center gap-1">
+                  <span class="text-slate-muted">$</span>
+                  <input type="number" class="w-24 px-2 py-1 text-sm border border-hairline rounded focus:border-flame-500 outline-none edit-retail" value={p.retail} data-original={p.retail} />
+                </div>
+              </td>
+              <td class="edit-cell hidden">
+                <span class="text-sm text-slate-muted">Auto</span>
+              </td>
+
+              <!-- Other columns -->
+              <td>
+                <span class={`badge ${p.entrega === 'inmediata' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                  {p.entrega === 'inmediata' ? 'Inmediata' : 'Bajo pedido'}
+                </span>
+              </td>
+              <td>
+                {p.badge ? (
+                  <span class="badge bg-purple-100 text-purple-700">{p.badge}</span>
+                ) : (
+                  <span class="text-slate-muted text-xs">-</span>
+                )}
+              </td>
+              <td class="text-right">
+                <div class="view-actions">
+                  <button type="button" class="text-flame-500 hover:text-flame-600 text-sm font-medium btn-edit transition-colors">Editar</button>
+                </div>
+                <div class="edit-actions hidden flex items-center justify-end gap-2">
+                  <button type="button" class="text-slate-500 hover:text-slate-700 text-xs font-medium btn-cancel transition-colors">Cancelar</button>
+                  <button type="button" class="bg-flame-500 hover:bg-flame-600 text-white px-3 py-1 rounded-md text-xs font-medium btn-save transition-colors" data-slug={p.slug}>Guardar</button>
+                </div>
+              </td>
+            </tr>
+          ))}
+          <tr id="no-results" class="hidden">
+            <td colspan="7" class="text-center py-8 text-slate-muted text-sm">No se encontraron productos que coincidan con los filtros.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script is:inline>
+    (function() {
+      // Filtering logic
+      const searchInput = document.getElementById('search-input');
+      const categoryFilter = document.getElementById('category-filter');
+      const entregaFilter = document.getElementById('entrega-filter');
+      const productRows = document.querySelectorAll('.product-row');
+      const noResults = document.getElementById('no-results');
+
+      function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const cat = categoryFilter.value;
+        const ent = entregaFilter.value;
+        
+        let visibleCount = 0;
+
+        productRows.forEach(row => {
+          const nameMatch = row.dataset.name.includes(searchTerm);
+          const catMatch = cat === 'all' || row.dataset.category === cat;
+          const entMatch = ent === 'all' || row.dataset.entrega === ent;
+
+          if (nameMatch && catMatch && entMatch) {
+            row.style.display = '';
+            visibleCount++;
+          } else {
+            row.style.display = 'none';
+          }
+        });
+
+        if (visibleCount === 0) {
+          noResults.classList.remove('hidden');
+        } else {
+          noResults.classList.add('hidden');
+        }
+      }
+
+      if (searchInput) searchInput.addEventListener('input', filterTable);
+      if (categoryFilter) categoryFilter.addEventListener('change', filterTable);
+      if (entregaFilter) entregaFilter.addEventListener('change', filterTable);
+
+      // Inline edit logic
+      productRows.forEach(row => {
+        const btnEdit = row.querySelector('.btn-edit');
+        const btnCancel = row.querySelector('.btn-cancel');
+        const btnSave = row.querySelector('.btn-save');
+        
+        const viewCells = row.querySelectorAll('.view-cell');
+        const editCells = row.querySelectorAll('.edit-cell');
+        const viewActions = row.querySelector('.view-actions');
+        const editActions = row.querySelector('.edit-actions');
+        
+        const inputMonthly = row.querySelector('.edit-monthly');
+        const inputRetail = row.querySelector('.edit-retail');
+
+        const savingsCell = row.querySelector('.savings-cell span');
+        const monthlyViewCell = row.querySelector('[data-field="monthly"]');
+        const retailViewCell = row.querySelector('[data-field="retail"]');
+
+        function toggleEdit(editing) {
+          if (editing) {
+            viewCells.forEach(c => c.classList.add('hidden'));
+            editCells.forEach(c => c.classList.remove('hidden'));
+            viewActions.classList.add('hidden');
+            editActions.classList.remove('hidden');
+            editActions.classList.add('flex');
+          } else {
+            viewCells.forEach(c => c.classList.remove('hidden'));
+            editCells.forEach(c => c.classList.add('hidden'));
+            viewActions.classList.remove('hidden');
+            editActions.classList.add('hidden');
+            editActions.classList.remove('flex');
+          }
+        }
+
+        if (btnEdit) btnEdit.addEventListener('click', () => toggleEdit(true));
+        
+        if (btnCancel) {
+          btnCancel.addEventListener('click', () => {
+            inputMonthly.value = inputMonthly.dataset.original;
+            inputRetail.value = inputRetail.dataset.original;
+            toggleEdit(false);
+          });
+        }
+
+        if (btnSave) {
+          btnSave.addEventListener('click', async () => {
+            const slug = btnSave.dataset.slug;
+            const newMonthly = parseInt(inputMonthly.value, 10) || 0;
+            const newRetail = parseInt(inputRetail.value, 10) || 0;
+            
+            btnSave.disabled = true;
+            btnSave.textContent = '...';
+
+            try {
+              const res = await fetch('/api/admin/update-product-price', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug, monthly: newMonthly, retail: newRetail })
+              });
+
+              if (!res.ok) throw new Error('Error al guardar');
+              
+              inputMonthly.dataset.original = newMonthly;
+              inputRetail.dataset.original = newRetail;
+              
+              monthlyViewCell.innerHTML = `<span class="font-semibold text-ink">$${newMonthly}</span><span class="text-xs text-slate-muted">/mes</span>`;
+              retailViewCell.textContent = `$${newRetail}`;
+              savingsCell.textContent = `$${newRetail - newMonthly}`;
+              
+              toggleEdit(false);
+            } catch (err) {
+              alert('Hubo un error al actualizar el precio. Verifica tu conexión.');
+            } finally {
+              btnSave.disabled = false;
+              btnSave.textContent = 'Guardar';
+            }
+          });
+        }
+      });
+    })();
+  </script>
+</AdminLayout>

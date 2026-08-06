@@ -1,0 +1,276 @@
+---
+// RentModal.astro
+// Modal component for initiating a rental flow with Google Auth
+---
+
+<div 
+  id="rent-modal" 
+  class="fixed inset-0 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300"
+  aria-hidden="true"
+>
+  <div class="absolute inset-0 bg-ink/40 backdrop-blur-sm transition-opacity" id="rent-modal-backdrop"></div>
+  
+  <div 
+    class="relative w-full max-w-lg bg-white rounded-4xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 mx-4"
+    id="rent-modal-card"
+    role="dialog"
+    aria-modal="true"
+  >
+    <button 
+      id="rent-modal-close" 
+      class="absolute top-4 right-4 p-2 text-ink-soft hover:text-ink transition-colors rounded-full hover:bg-slate-muted/20 z-10"
+      aria-label="Cerrar modal"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+
+    <div class="p-8">
+      <p class="eyebrow mb-2">Configura tu plan</p>
+      <h3 class="text-2xl font-display font-bold text-ink mb-6" id="rent-modal-title">Obtén tu Producto</h3>
+      
+      <div class="space-y-4 mb-6">
+        <p class="text-sm font-medium text-ink-soft">Selecciona el tiempo de renta:</p>
+        <div class="grid grid-cols-2 gap-4">
+          <!-- 6 Months / Plan Libre -->
+          <label class="relative flex flex-col p-4 border-2 border-slate-muted rounded-2xl cursor-pointer hover:border-flame-300 transition-colors has-[:checked]:border-flame-500 has-[:checked]:bg-flame-50/50">
+            <input type="radio" name="rent_plan" value="6" class="peer sr-only" checked>
+            <span class="text-sm font-bold text-ink mb-1">Plan Libre (6m)</span>
+            <span class="text-xs text-ink-soft mb-2">Flexibilidad total</span>
+            <span class="text-lg font-bold text-ink mt-auto block" id="price-6m">$0/mes</span>
+          </label>
+          
+          <!-- 12 Months / Plan Anual -->
+          <label class="relative flex flex-col p-4 border-2 border-slate-muted rounded-2xl cursor-pointer hover:border-flame-300 transition-colors has-[:checked]:border-flame-500 has-[:checked]:bg-flame-50/50">
+            <div class="absolute -top-3 right-3 bg-sun-300 text-ink text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">-20% dscto</div>
+            <input type="radio" name="rent_plan" value="12" class="peer sr-only">
+            <span class="text-sm font-bold text-ink mb-1">Plan Anual (12m)</span>
+            <span class="text-xs text-ink-soft mb-2">El mejor precio</span>
+            <span class="text-lg font-bold text-ink mt-auto block" id="price-12m">$0/mes</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="bg-cream p-6 rounded-3xl mb-6 text-center border border-slate-muted/50">
+        <p class="text-sm text-ink-soft mb-1">Total a pagar hoy (1er mes):</p>
+        <div class="text-4xl font-display font-black text-ink tracking-tight" id="rent-modal-total">
+          $0<span class="text-xl text-ink-soft font-medium">/mes</span>
+        </div>
+      </div>
+
+      <button
+        id="rent-modal-submit"
+        class="w-full flex items-center justify-center gap-3 bg-white border border-slate-muted shadow-sm hover:shadow-md text-ink font-medium py-3.5 px-6 rounded-2xl transition-all hover:bg-slate-50 relative overflow-hidden"
+      >
+        <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        <span>Continuar con Google</span>
+      </button>
+      
+      <p id="rent-modal-disclaimer" class="text-center text-xs text-ink-soft mt-4">
+        Usamos Google solo para verificar tu identidad.<br/>No publicamos nada.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+  import { initSessionFromCookies } from '../lib/supabase';
+
+  let isAuthenticated = false;
+
+  // Constants based on business logic
+  const LOYALTY_DISCOUNT = 0.2;
+  
+  // State
+  let currentProduct = {
+    slug: '',
+    name: '',
+    monthly: 0
+  };
+  
+  // Elements
+  const modal = document.getElementById('rent-modal');
+  const backdrop = document.getElementById('rent-modal-backdrop');
+  const card = document.getElementById('rent-modal-card');
+  const closeBtn = document.getElementById('rent-modal-close');
+  const title = document.getElementById('rent-modal-title');
+  const price6m = document.getElementById('price-6m');
+  const price12m = document.getElementById('price-12m');
+  const total = document.getElementById('rent-modal-total');
+  const submitBtn = document.getElementById('rent-modal-submit');
+  const disclaimer = document.getElementById('rent-modal-disclaimer');
+  const radios = document.querySelectorAll<HTMLInputElement>('input[name="rent_plan"]');
+  
+  // Check auth status
+  initSessionFromCookies().then(session => {
+    if (session) {
+      isAuthenticated = true;
+      if (submitBtn) {
+        submitBtn.innerHTML = `<span>Continuar</span><svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>`;
+        submitBtn.classList.remove('bg-white', 'border', 'border-slate-muted', 'text-ink', 'hover:bg-slate-50');
+        submitBtn.classList.add('bg-flame-500', 'text-white', 'shadow-lg', 'shadow-flame-500/25', 'hover:bg-flame-600', 'border-transparent');
+      }
+      if (disclaimer) {
+        disclaimer.style.display = 'none';
+      }
+    }
+  });
+  
+  // Formatting
+  const formatMoney = (val: number) => `$${val}`;
+  
+  // Price calculation
+  const getPrice = (base: number, months: number) => {
+    if (months === 12) {
+      return Math.round(base * (1 - LOYALTY_DISCOUNT));
+    }
+    return base;
+  };
+  
+  // Update displayed total based on selected plan
+  const updatePrices = () => {
+    if (!total) return;
+    const selected = document.querySelector<HTMLInputElement>('input[name="rent_plan"]:checked');
+    if (selected) {
+      const months = parseInt(selected.value, 10);
+      const price = getPrice(currentProduct.monthly, months);
+      total.innerHTML = `${formatMoney(price)}<span class="text-xl text-ink-soft font-medium">/mes</span>`;
+    }
+  };
+  
+  // Open modal
+  const openModal = (slug: string, name: string, monthly: number) => {
+    if (!modal || !card || !title || !price6m || !price12m) return;
+    
+    currentProduct = { slug, name, monthly };
+    
+    // Update texts
+    title.textContent = `Obtén tu ${name}`;
+    price6m.textContent = `${formatMoney(getPrice(monthly, 6))}/mes`;
+    price12m.textContent = `${formatMoney(getPrice(monthly, 12))}/mes`;
+    
+    // Reset selection to 6m by default
+    const defaultRadio = document.querySelector<HTMLInputElement>('input[name="rent_plan"][value="6"]');
+    if (defaultRadio) defaultRadio.checked = true;
+    updatePrices();
+    
+    // Show with animation
+    modal.classList.remove('hidden');
+    // Force reflow
+    void modal.offsetWidth;
+    modal.classList.remove('opacity-0');
+    card.classList.remove('scale-95');
+    card.classList.add('scale-100');
+    
+    document.body.style.overflow = 'hidden';
+  };
+  
+  // Close modal
+  const closeModal = () => {
+    if (!modal || !card) return;
+    
+    modal.classList.add('opacity-0');
+    card.classList.remove('scale-100');
+    card.classList.add('scale-95');
+    
+    setTimeout(() => {
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }, 300);
+  };
+  
+  // Event Listeners
+  
+  // Listen for open events globally on data-rent-modal buttons
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const btn = target.closest<HTMLElement>('[data-rent-modal]');
+    
+    if (btn) {
+      const slug = btn.getAttribute('data-product-slug');
+      const name = btn.getAttribute('data-product-name');
+      const monthlyStr = btn.getAttribute('data-product-monthly');
+      
+      if (slug && name && monthlyStr) {
+        openModal(slug, name, parseInt(monthlyStr, 10));
+      }
+    }
+  });
+  
+  radios.forEach(r => r.addEventListener('change', updatePrices));
+  
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  if (backdrop) backdrop.addEventListener('click', closeModal);
+  
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+      closeModal();
+    }
+  });
+  
+  // Handle Google Auth Submit
+  if (submitBtn) {
+    submitBtn.addEventListener('click', async () => {
+      const selected = document.querySelector<HTMLInputElement>('input[name="rent_plan"]:checked');
+      if (!selected) return;
+      
+      const termMonths = parseInt(selected.value, 10);
+      const monthlyRent = getPrice(currentProduct.monthly, termMonths);
+      
+      // Store selection for after redirect
+      sessionStorage.setItem('lendix_rent_selection', JSON.stringify({
+        product_slug: currentProduct.slug,
+        product_name: currentProduct.name,
+        term_months: termMonths,
+        monthly_rent: monthlyRent
+      }));
+      
+      if (isAuthenticated) {
+        window.location.href = '/completar-registro';
+        return;
+      }
+      
+      const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+      const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey) {
+        console.error('Missing Supabase env vars');
+        alert('Error de configuración. Intenta nuevamente.');
+        return;
+      }
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Loading state UI
+      submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+      const originalHTML = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<span class="inline-block w-5 h-5 border-2 border-slate-300 border-t-ink rounded-full animate-spin mr-2"></span><span>Conectando...</span>';
+      
+      const siteUrl = window.location.origin;
+      
+      try {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${siteUrl}/auth/callback`
+          }
+        });
+        
+        if (error) throw error;
+        
+      } catch (err) {
+        console.error('Google Auth Error:', err);
+        alert('No se pudo conectar con Google. Por favor, intenta de nuevo.');
+        submitBtn.innerHTML = originalHTML;
+        submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+      }
+    });
+  }
+</script>

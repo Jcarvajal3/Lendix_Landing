@@ -1,0 +1,23 @@
+---
+export const prerender = false;
+
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+
+const accessToken = Astro.cookies.get('sb-access-token')?.value;
+
+if (accessToken) {
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
+  await supabase.auth.signOut();
+}
+
+// Limpiar cookies de autenticación
+Astro.cookies.delete('sb-access-token', { path: '/' });
+Astro.cookies.delete('sb-refresh-token', { path: '/' });
+
+return Astro.redirect('/');
+---

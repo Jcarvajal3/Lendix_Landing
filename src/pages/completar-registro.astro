@@ -1,0 +1,369 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+---
+
+<Base title="Completar Registro | Lendix" description="Completa tu perfil para solicitar tu equipo.">
+  <div class="min-h-screen bg-cream flex flex-col">
+    <Nav />
+    
+    <main class="flex-grow container-x py-12 md:py-24 flex items-center justify-center">
+      <div class="w-full max-w-2xl">
+        <div id="auth-warning" class="hidden text-center card-surface rounded-4xl p-10 mb-8 border border-hairline/50 shadow-sm">
+          <h2 class="font-display text-2xl font-semibold text-ink mb-4">Necesitas iniciar sesión</h2>
+          <p class="text-ink-soft mb-8">Debes iniciar sesión para completar tu solicitud.</p>
+          <a href="/" class="inline-flex items-center justify-center h-14 px-8 rounded-full bg-flame-500 text-white font-medium hover:bg-flame-600 transition-colors">Volver al inicio</a>
+        </div>
+
+        <div id="selection-warning" class="hidden text-center card-surface rounded-4xl p-10 mb-8 border border-hairline/50 shadow-sm">
+          <h2 class="font-display text-2xl font-semibold text-ink mb-4">No has seleccionado un equipo</h2>
+          <p class="text-ink-soft mb-8">Por favor, elige el equipo que deseas rentar antes de continuar.</p>
+          <a href="/" class="inline-flex items-center justify-center h-14 px-8 rounded-full bg-flame-500 text-white font-medium hover:bg-flame-600 transition-colors">Ver catálogo</a>
+        </div>
+        
+        <div id="main-content" class="card-surface rounded-4xl p-6 sm:p-10 border border-hairline/50 shadow-sm hidden">
+          <div class="mb-10 pb-8 border-b border-hairline">
+            <h1 class="font-display text-3xl font-semibold text-ink mb-2">Completar Solicitud</h1>
+            <p class="text-ink-soft">Sube tus documentos para procesar la renta de tu equipo.</p>
+            
+            <div class="mt-6 bg-cream-deep/50 rounded-2xl p-5 border border-hairline">
+              <h3 class="font-semibold text-ink text-sm uppercase tracking-wider mb-3">Resumen de tu selección</h3>
+              <div class="flex justify-between items-center">
+                <div>
+                  <div id="summary-product" class="font-display font-medium text-lg text-ink">Cargando...</div>
+                  <div id="summary-plan" class="text-ink-soft text-sm">Plan</div>
+                </div>
+                <div class="text-right">
+                  <div id="summary-price" class="font-display font-semibold text-2xl text-flame-500">$-.--</div>
+                  <div class="text-ink-soft text-xs">/ mes</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div id="form-error" class="hidden mb-6 p-4 bg-red-50 text-red-700 rounded-xl border border-red-100 text-sm">
+          </div>
+
+          <form id="kyc-form" class="space-y-8">
+            <div class="space-y-6">
+              <h3 class="font-display text-xl font-medium text-ink">1. Identidad</h3>
+              <p class="text-sm text-ink-soft">Sube una foto clara de tu cédula por ambos lados.</p>
+              
+              <!-- Cedula Front -->
+              <div class="upload-container" data-id="cedula-front">
+                <label class="block text-sm font-semibold text-ink mb-2">Foto de tu cédula (frente)</label>
+                <div class="upload-area relative border-2 border-dashed border-hairline rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-cream/50 transition-colors cursor-pointer group">
+                  <input type="file" id="cedula-front" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" required>
+                  <div class="preview-container hidden w-full flex justify-center">
+                    <img src="" alt="Preview" class="max-h-40 object-cover rounded-xl shadow-sm">
+                  </div>
+                  <div class="placeholder-container flex flex-col items-center text-center">
+                    <svg class="w-8 h-8 text-slate-muted mb-3 group-hover:text-flame-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p class="text-sm text-ink-soft"><span class="font-medium text-flame-500">Haz clic para subir</span> o arrastra tu archivo aquí</p>
+                    <p class="text-xs text-slate-muted mt-1">PNG, JPG hasta 5MB</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cedula Back -->
+              <div class="upload-container" data-id="cedula-back">
+                <label class="block text-sm font-semibold text-ink mb-2">Foto de tu cédula (reverso)</label>
+                <div class="upload-area relative border-2 border-dashed border-hairline rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-cream/50 transition-colors cursor-pointer group">
+                  <input type="file" id="cedula-back" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" required>
+                  <div class="preview-container hidden w-full flex justify-center">
+                    <img src="" alt="Preview" class="max-h-40 object-cover rounded-xl shadow-sm">
+                  </div>
+                  <div class="placeholder-container flex flex-col items-center text-center">
+                    <svg class="w-8 h-8 text-slate-muted mb-3 group-hover:text-flame-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p class="text-sm text-ink-soft"><span class="font-medium text-flame-500">Haz clic para subir</span> o arrastra tu archivo aquí</p>
+                    <p class="text-xs text-slate-muted mt-1">PNG, JPG hasta 5MB</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Selfie -->
+              <div class="upload-container" data-id="selfie">
+                <label class="block text-sm font-semibold text-ink mb-2">Selfie sosteniendo tu cédula</label>
+                <div class="upload-area relative border-2 border-dashed border-hairline rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-cream/50 transition-colors cursor-pointer group">
+                  <input type="file" id="selfie" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" required>
+                  <div class="preview-container hidden w-full flex justify-center">
+                    <img src="" alt="Preview" class="max-h-40 object-cover rounded-xl shadow-sm">
+                  </div>
+                  <div class="placeholder-container flex flex-col items-center text-center">
+                    <svg class="w-8 h-8 text-slate-muted mb-3 group-hover:text-flame-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <p class="text-sm text-ink-soft"><span class="font-medium text-flame-500">Haz clic para subir</span> o arrastra tu archivo aquí</p>
+                    <p class="text-xs text-slate-muted mt-1">Asegúrate de que tu rostro y la cédula sean visibles</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-6 pt-6 border-t border-hairline">
+              <h3 class="font-display text-xl font-medium text-ink">2. Datos de contacto y envío</h3>
+              
+              <div>
+                <label for="phone" class="block text-sm font-semibold text-ink mb-2">Teléfono</label>
+                <input type="tel" id="phone" name="phone" required placeholder="+58 412 000 0000" class="w-full px-5 py-4 bg-cream-deep/30 border border-hairline rounded-2xl focus:outline-none focus:border-flame-400 focus:ring-1 focus:ring-flame-400 transition-colors placeholder:text-slate-muted text-ink">
+              </div>
+
+              <div>
+                <label for="address" class="block text-sm font-semibold text-ink mb-2">Dirección de envío</label>
+                <textarea id="address" name="address" required placeholder="Calle, edificio/casa, piso, referencia..." rows="3" class="w-full px-5 py-4 bg-cream-deep/30 border border-hairline rounded-2xl focus:outline-none focus:border-flame-400 focus:ring-1 focus:ring-flame-400 transition-colors placeholder:text-slate-muted text-ink resize-none"></textarea>
+              </div>
+
+              <div>
+                <label for="city" class="block text-sm font-semibold text-ink mb-2">Ciudad</label>
+                <input type="text" id="city" name="city" required placeholder="Caracas, Valencia..." class="w-full px-5 py-4 bg-cream-deep/30 border border-hairline rounded-2xl focus:outline-none focus:border-flame-400 focus:ring-1 focus:ring-flame-400 transition-colors placeholder:text-slate-muted text-ink">
+              </div>
+            </div>
+
+            <button type="submit" id="submit-btn" class="w-full inline-flex items-center justify-center h-14 rounded-full bg-flame-500 text-white font-medium hover:bg-flame-600 transition-colors mt-8 relative overflow-hidden group">
+              <span id="btn-text">Enviar solicitud</span>
+              <span id="btn-loader" class="hidden absolute inset-0 flex items-center justify-center bg-flame-600">
+                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <div id="success-state" class="hidden text-center card-surface rounded-4xl p-10 mb-8 border border-hairline/50 shadow-sm">
+          <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+          <h2 class="font-display text-3xl font-semibold text-ink mb-4">¡Solicitud enviada!</h2>
+          <p class="text-ink-soft text-lg mb-8 max-w-md mx-auto">Revisaremos tus documentos y te contactaremos en menos de 24 horas por WhatsApp.</p>
+          <a href="/" class="inline-flex items-center justify-center h-14 px-8 rounded-full bg-flame-500 text-white font-medium hover:bg-flame-600 transition-colors">Volver al inicio</a>
+        </div>
+      </div>
+    </main>
+  </div>
+</Base>
+
+<script>
+  import { supabase, initSessionFromCookies } from '../lib/supabase';
+
+  // Setup UI elements
+  const mainContent = document.getElementById('main-content');
+  const authWarning = document.getElementById('auth-warning');
+  const selectionWarning = document.getElementById('selection-warning');
+  const formErrorDiv = document.getElementById('form-error');
+  const kycForm = document.getElementById('kyc-form') as HTMLFormElement;
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+  const btnText = document.getElementById('btn-text');
+  const btnLoader = document.getElementById('btn-loader');
+  const successState = document.getElementById('success-state');
+  
+  let currentUser: any = null;
+  let rentSelection: any = null;
+
+  async function checkAuthAndSelection() {
+    // Inicializar sesión desde cookies (seteadas por /auth/callback)
+    const session = await initSessionFromCookies();
+    
+    if (session) {
+      currentUser = session.user;
+    }
+
+    if (!currentUser) {
+      authWarning?.classList.remove('hidden');
+      return;
+    }
+
+    // Check Selection
+    const selectionData = sessionStorage.getItem('lendix_rent_selection');
+    if (!selectionData) {
+      selectionWarning?.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      rentSelection = JSON.parse(selectionData);
+      
+      // Populate summary
+      const elProduct = document.getElementById('summary-product');
+      const elPlan = document.getElementById('summary-plan');
+      const elPrice = document.getElementById('summary-price');
+      
+      if (elProduct) elProduct.textContent = rentSelection.product_name || rentSelection.product_slug;
+      if (elPlan) elPlan.textContent = `Plan de ${rentSelection.term_months} meses`;
+      if (elPrice) elPrice.textContent = `$${rentSelection.monthly_rent}`;
+
+      mainContent?.classList.remove('hidden');
+    } catch (e) {
+      selectionWarning?.classList.remove('hidden');
+    }
+  }
+
+  // Handle file preview
+  const setupFileInput = (inputId: string) => {
+    const input = document.getElementById(inputId) as HTMLInputElement;
+    const container = input.closest('.upload-area');
+    const previewContainer = container?.querySelector('.preview-container');
+    const previewImg = previewContainer?.querySelector('img') as HTMLImageElement;
+    const placeholder = container?.querySelector('.placeholder-container');
+
+    if (!input || !container || !previewContainer || !previewImg || !placeholder) return;
+
+    // Handle styling for drag and drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      input.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e: Event) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      input.addEventListener(eventName, () => {
+        container.classList.add('border-flame-400', 'bg-flame-50/50');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      input.addEventListener(eventName, () => {
+        container.classList.remove('border-flame-400', 'bg-flame-50/50');
+      }, false);
+    });
+
+    // Handle preview
+    input.addEventListener('change', function(this: HTMLInputElement) {
+      if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previewImg.src = e.target?.result as string;
+          placeholder.classList.add('hidden');
+          previewContainer.classList.remove('hidden');
+          container.classList.add('border-solid');
+          container.classList.remove('border-dashed');
+        };
+        reader.readAsDataURL(this.files[0]);
+      }
+    });
+  };
+
+  setupFileInput('cedula-front');
+  setupFileInput('cedula-back');
+  setupFileInput('selfie');
+
+  // Handle Form Submit
+  kycForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    if (!currentUser || !rentSelection) return;
+
+    const cedulaFrontInput = document.getElementById('cedula-front') as HTMLInputElement;
+    const cedulaBackInput = document.getElementById('cedula-back') as HTMLInputElement;
+    const selfieInput = document.getElementById('selfie') as HTMLInputElement;
+    
+    const phoneInput = document.getElementById('phone') as HTMLInputElement;
+    const addressInput = document.getElementById('address') as HTMLTextAreaElement;
+    const cityInput = document.getElementById('city') as HTMLInputElement;
+
+    const files = {
+      'cedula-front': cedulaFrontInput.files?.[0],
+      'cedula-back': cedulaBackInput.files?.[0],
+      'selfie': selfieInput.files?.[0]
+    };
+
+    if (!files['cedula-front'] || !files['cedula-back'] || !files['selfie']) {
+      showError('Por favor sube todas las imágenes requeridas.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const uploadPromises = Object.entries(files).map(async ([key, file]) => {
+        if (!file) return null;
+        
+        const ext = file.name.split('.').pop();
+        const fileName = `${currentUser.id}/${key}-${Date.now()}.${ext}`;
+        
+        const { data, error } = await supabase.storage
+          .from('kyc-documents')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) throw error;
+        
+        return { key, path: data.path };
+      });
+
+      const uploadedFiles = await Promise.all(uploadPromises);
+      
+      const filePaths = uploadedFiles.reduce((acc, curr) => {
+        if (curr) acc[curr.key] = curr.path;
+        return acc;
+      }, {} as Record<string, string>);
+
+      // Insert Application
+      const { error: insertError } = await supabase
+        .from('rental_applications')
+        .insert({
+          user_id: currentUser.id,
+          product_slug: rentSelection.product_slug,
+          product_name: rentSelection.product_name,
+          term_months: rentSelection.term_months,
+          monthly_rent: rentSelection.monthly_rent,
+          cedula_front_path: filePaths['cedula-front'],
+          cedula_back_path: filePaths['cedula-back'],
+          selfie_path: filePaths['selfie'],
+          phone: phoneInput.value,
+          address: addressInput.value,
+          city: cityInput.value,
+          status: 'pending'
+        });
+
+      if (insertError) throw insertError;
+
+      // Success
+      mainContent?.classList.add('hidden');
+      successState?.classList.remove('hidden');
+      sessionStorage.removeItem('lendix_rent_selection');
+
+    } catch (error: any) {
+      console.error(error);
+      showError(error.message || 'Hubo un error al procesar tu solicitud. Intenta nuevamente.');
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  function showError(msg: string) {
+    if (formErrorDiv) {
+      formErrorDiv.textContent = msg;
+      formErrorDiv.classList.remove('hidden');
+      formErrorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  function setLoading(isLoading: boolean) {
+    if (isLoading) {
+      submitBtn.disabled = true;
+      btnText?.classList.add('invisible');
+      btnLoader?.classList.remove('hidden');
+    } else {
+      submitBtn.disabled = false;
+      btnText?.classList.remove('invisible');
+      btnLoader?.classList.add('hidden');
+    }
+  }
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', checkAuthAndSelection);
+</script>

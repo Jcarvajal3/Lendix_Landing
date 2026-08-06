@@ -1,0 +1,370 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { supabaseAdmin } from '../../lib/supabase-admin';
+
+// Fetch users
+const { data: users, error: usersError } = await supabaseAdmin
+  .from('user_profiles')
+  .select('*')
+  .order('created_at', { ascending: false });
+
+if (usersError) {
+  console.error('Error fetching users:', usersError);
+}
+
+// Fetch rentals
+const { data: rentals, error: rentalsError } = await supabaseAdmin
+  .from('rental_applications')
+  .select('*');
+
+if (rentalsError) {
+  console.error('Error fetching rentals:', rentalsError);
+}
+
+// Fetch payments
+const { data: payments, error: paymentsError } = await supabaseAdmin
+  .from('rental_payments')
+  .select('*');
+
+if (paymentsError) {
+  console.error('Error fetching payments:', paymentsError);
+}
+
+const safeUsers = users || [];
+const safeRentals = rentals || [];
+const safePayments = payments || [];
+
+// Maps
+const userRentalsMap = new Map<string, any[]>();
+const userPaymentsMap = new Map<string, any[]>();
+
+safeRentals.forEach(rental => {
+  if (!userRentalsMap.has(rental.user_id)) {
+    userRentalsMap.set(rental.user_id, []);
+  }
+  userRentalsMap.get(rental.user_id)!.push(rental);
+});
+
+safePayments.forEach(payment => {
+  if (!userPaymentsMap.has(payment.user_id)) {
+    userPaymentsMap.set(payment.user_id, []);
+  }
+  userPaymentsMap.get(payment.user_id)!.push(payment);
+});
+
+// Summary Stats
+const totalUsers = safeUsers.length;
+const adminCount = safeUsers.filter(u => u.role === 'admin' || u.role === 'superadmin').length;
+const usersWithActiveRentals = new Set(
+  safeRentals
+    .filter(r => ['approved', 'reviewing', 'pending'].includes(r.status))
+    .map(r => r.user_id)
+).size;
+
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+};
+
+const formatDate = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleDateString('es-ES', {
+    day: '2-digit', month: 'short', year: 'numeric'
+  });
+};
+
+const getRoleBadgeClass = (role: string) => {
+  switch (role) {
+    case 'superadmin': return 'bg-purple-100 text-purple-800 border-purple-200';
+    case 'admin': return 'bg-blue-100 text-blue-800 border-blue-200';
+    default: return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
+};
+
+const getStatusBadgeClass = (status: string) => {
+  switch (status) {
+    case 'pending': case 'reviewing': return 'badge-pending';
+    case 'approved': return 'badge-approved';
+    case 'rejected': return 'badge-rejected';
+    case 'cancelled': return 'badge-cancelled';
+    case 'paid': return 'badge-paid';
+    case 'overdue': return 'badge-overdue';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+};
+
+// Pre-compute user data for the template
+const usersData = safeUsers.map(user => {
+  const uRentals = userRentalsMap.get(user.id) || [];
+  const uPayments = userPaymentsMap.get(user.id) || [];
+  const activeRentals = uRentals.filter((r: any) => ['approved', 'reviewing', 'pending'].includes(r.status));
+  const pendingPayments = uPayments.filter((p: any) => p.status === 'pending' || p.status === 'overdue');
+  const totalDebt = pendingPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+
+  return { user, uRentals, uPayments, activeRentals, pendingPayments, totalDebt };
+});
+---
+
+<AdminLayout title="Usuarios" activePage="usuarios">
+  <div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+      <h1 class="text-2xl font-display font-bold text-ink">Gestión de Usuarios</h1>
+      <p class="text-ink/70">Administra los usuarios registrados y su actividad.</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Usuarios</div>
+      <div class="kpi-value">{totalUsers}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Administradores</div>
+      <div class="kpi-value">{adminCount}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Con Rentas Activas</div>
+      <div class="kpi-value">{usersWithActiveRentals}</div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="bg-white rounded-xl shadow-sm border border-flame-100 mb-6 p-4">
+    <div class="flex flex-col md:flex-row gap-4">
+      <div class="flex-1 relative">
+        <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-ink/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Buscar por nombre, email o cédula..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-flame-500 focus:border-flame-500 outline-none transition-shadow">
+      </div>
+      <select id="roleFilter" class="w-full md:w-48 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-flame-500 outline-none bg-white">
+        <option value="all">Todos los roles</option>
+        <option value="cliente">Cliente</option>
+        <option value="admin">Admin</option>
+        <option value="superadmin">Superadmin</option>
+      </select>
+      <select id="statusFilter" class="w-full md:w-48 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-flame-500 outline-none bg-white">
+        <option value="all">Registro: Todos</option>
+        <option value="complete">Completos</option>
+        <option value="incomplete">Incompletos</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="admin-table-container">
+    <table class="admin-table w-full">
+      <thead>
+        <tr>
+          <th class="w-10"></th>
+          <th>Usuario</th>
+          <th>Teléfono</th>
+          <th>Cédula</th>
+          <th>Rol</th>
+          <th class="text-center">Registro</th>
+          <th class="text-center">Rentas Activas</th>
+          <th class="text-right">Deuda Pendiente</th>
+          <th>Miembro Desde</th>
+        </tr>
+      </thead>
+      <tbody id="usersTableBody">
+        {usersData.map(({ user, uRentals, pendingPayments, activeRentals, totalDebt }) => (
+          <>
+            <tr class="user-row hover:bg-gray-50 border-b border-gray-100 cursor-pointer group transition-colors"
+                data-user-id={user.id}
+                data-name={(user.full_name || '').toLowerCase()}
+                data-email={(user.email || '').toLowerCase()}
+                data-cedula={(user.cedula || '').toLowerCase()}
+                data-role={user.role || 'cliente'}
+                data-registration={user.registration_complete ? 'complete' : 'incomplete'}>
+              <td class="text-center">
+                <svg class="detail-toggle-icon w-5 h-5 text-gray-400 group-hover:text-flame-500 transition-transform transform inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </td>
+              <td>
+                <div class="flex items-center gap-3">
+                  {user.avatar_url ? (
+                    <img src={user.avatar_url} alt={user.full_name || ''} class="w-10 h-10 rounded-full object-cover border border-gray-200" />
+                  ) : (
+                    <div class="w-10 h-10 rounded-full bg-flame-100 text-flame-500 flex items-center justify-center font-bold font-display border border-flame-200">
+                      {(user.full_name || user.email || '?').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <div class="font-medium text-ink">{user.full_name || 'Sin nombre'}</div>
+                    <div class="text-sm text-ink/60">{user.email}</div>
+                  </div>
+                </div>
+              </td>
+              <td>{user.phone || '-'}</td>
+              <td>{user.cedula || '-'}</td>
+              <td>
+                <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getRoleBadgeClass(user.role)}`}>
+                  {user.role}
+                </span>
+              </td>
+              <td class="text-center">
+                {user.registration_complete ? (
+                  <svg class="w-5 h-5 text-green-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                ) : (
+                  <svg class="w-5 h-5 text-red-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                )}
+              </td>
+              <td class="text-center font-medium">{activeRentals.length}</td>
+              <td class="text-right font-medium text-red-600">
+                {totalDebt > 0 ? formatCurrency(totalDebt) : '-'}
+              </td>
+              <td class="text-sm">{formatDate(user.created_at)}</td>
+            </tr>
+
+            {/* Details Row */}
+            <tr class="details-row hidden bg-gray-50/50" data-details-for={user.id}>
+              <td colspan="9" class="p-0">
+                <div class="border-b border-gray-200 overflow-hidden">
+                  <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Rentals Section */}
+                    <div>
+                      <h4 class="font-display font-bold text-ink mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-flame-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                        Historial de Solicitudes
+                      </h4>
+                      {uRentals.length > 0 ? (
+                        <div class="space-y-3">
+                          {uRentals.map((rental: any) => (
+                            <div class="bg-white p-3 rounded-lg border border-gray-200 flex justify-between items-center">
+                              <div>
+                                <div class="font-medium text-ink">{rental.product_name || rental.product_slug}</div>
+                                <div class="text-sm text-ink/60">{rental.term_months} meses • {formatCurrency(rental.monthly_rent)}/mes</div>
+                                <div class="text-xs text-ink/40 mt-1">{formatDate(rental.created_at)}</div>
+                              </div>
+                              <span class={`px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusBadgeClass(rental.status)}`}>
+                                {rental.status}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div class="text-sm text-ink/50 bg-white p-4 rounded-lg border border-gray-100 text-center">
+                          No hay solicitudes registradas
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Payments Section */}
+                    <div>
+                      <h4 class="font-display font-bold text-ink mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-flame-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Pagos Pendientes y Atrasados
+                      </h4>
+
+                      <div class="bg-white p-4 rounded-lg border border-gray-200 mb-4 flex justify-between items-center shadow-sm">
+                        <span class="font-medium">Total Deuda:</span>
+                        <span class="font-display font-bold text-red-600 text-xl">{formatCurrency(totalDebt)}</span>
+                      </div>
+
+                      {pendingPayments.length > 0 ? (
+                        <div class="space-y-3">
+                          {pendingPayments.map((payment: any) => (
+                            <div class="bg-white p-3 rounded-lg border border-gray-200 flex justify-between items-center">
+                              <div>
+                                <div class="font-medium text-ink">Mes {payment.month_number}</div>
+                                <div class="text-sm text-ink/60">Vence: {formatDate(payment.due_date)}</div>
+                              </div>
+                              <div class="text-right">
+                                <div class="font-medium">{formatCurrency(payment.amount)}</div>
+                                <span class={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusBadgeClass(payment.status)}`}>
+                                  {payment.status}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div class="text-sm text-ink/50 bg-white p-4 rounded-lg border border-gray-100 text-center flex items-center justify-center gap-2">
+                          <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                          Al día con sus pagos
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </>
+        ))}
+        {safeUsers.length === 0 && (
+          <tr>
+            <td colspan="9" class="text-center py-8 text-ink/50">
+              No se encontraron usuarios.
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+</AdminLayout>
+
+<script is:inline>
+  // Toggle details rows
+  document.querySelectorAll('.user-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const userId = row.getAttribute('data-user-id');
+      const detailsRow = document.querySelector(`.details-row[data-details-for="${userId}"]`);
+      const icon = row.querySelector('.detail-toggle-icon');
+
+      if (detailsRow) {
+        if (detailsRow.classList.contains('hidden')) {
+          detailsRow.classList.remove('hidden');
+          if (icon) icon.classList.add('rotate-180');
+        } else {
+          detailsRow.classList.add('hidden');
+          if (icon) icon.classList.remove('rotate-180');
+        }
+      }
+    });
+  });
+
+  // Filtering
+  const searchInput = document.getElementById('searchInput');
+  const roleFilter = document.getElementById('roleFilter');
+  const statusFilter = document.getElementById('statusFilter');
+  const userRows = document.querySelectorAll('.user-row');
+
+  function filterUsers() {
+    const searchTerm = (searchInput?.value || '').toLowerCase();
+    const roleVal = roleFilter?.value || 'all';
+    const statusVal = statusFilter?.value || 'all';
+
+    userRows.forEach(row => {
+      const name = row.getAttribute('data-name') || '';
+      const email = row.getAttribute('data-email') || '';
+      const cedula = row.getAttribute('data-cedula') || '';
+      const role = row.getAttribute('data-role') || '';
+      const registration = row.getAttribute('data-registration') || '';
+      const userId = row.getAttribute('data-user-id');
+
+      const matchesSearch = name.includes(searchTerm) || email.includes(searchTerm) || cedula.includes(searchTerm);
+      const matchesRole = roleVal === 'all' || role === roleVal;
+      const matchesStatus = statusVal === 'all' || registration === statusVal;
+
+      const detailsRow = document.querySelector(`.details-row[data-details-for="${userId}"]`);
+
+      if (matchesSearch && matchesRole && matchesStatus) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+        if (detailsRow && !detailsRow.classList.contains('hidden')) {
+          detailsRow.classList.add('hidden');
+          const icon = row.querySelector('.detail-toggle-icon');
+          if (icon) icon.classList.remove('rotate-180');
+        }
+      }
+    });
+  }
+
+  if (searchInput) searchInput.addEventListener('input', filterUsers);
+  if (roleFilter) roleFilter.addEventListener('change', filterUsers);
+  if (statusFilter) statusFilter.addEventListener('change', filterUsers);
+</script>

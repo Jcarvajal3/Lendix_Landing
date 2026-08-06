@@ -1,0 +1,289 @@
+---
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+---
+
+<div id="waitlist-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden w-full h-full p-4 overflow-y-auto">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" id="waitlist-modal-backdrop"></div>
+
+  <!-- Modal content -->
+  <div class="relative w-full max-w-lg bg-white rounded-4xl shadow-2xl shadow-black/25 p-6 sm:p-9 transform scale-95 translate-y-[10px] opacity-0 transition-all duration-200 ease-out" id="waitlist-modal-card">
+    
+    <!-- Close button -->
+    <button type="button" id="waitlist-modal-close" class="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 text-slate-muted hover:text-ink transition-colors rounded-full hover:bg-cream">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+      </svg>
+      <span class="sr-only">Cerrar</span>
+    </button>
+
+    <div class="flex flex-col gap-6">
+      <div>
+        <p class="eyebrow text-flame-600 mb-2">Lista de espera</p>
+        <h3 class="font-display text-2xl sm:text-3xl font-bold text-ink">
+          Reserva tu <span id="waitlist-modal-product-name" class="text-flame-500">equipo</span>
+        </h3>
+        <p class="text-ink-soft mt-2 text-sm sm:text-base">
+          Déjanos tus datos para ser de los primeros en acceder cuando esté disponible.
+        </p>
+      </div>
+
+      <!-- Error Alert -->
+      <div id="waitlist-modal-error" class="hidden rounded-2xl bg-red-50 p-4 border border-red-100">
+        <div class="flex gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p class="text-sm text-red-800" id="waitlist-modal-error-text">Ocurrió un error al procesar tu solicitud.</p>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <form id="waitlist-modal-form" class="flex flex-col gap-5">
+        <!-- Honeypot -->
+        <div class="hidden" aria-hidden="true">
+          <label for="waitlist-modal-website">Website</label>
+          <input type="text" id="waitlist-modal-website" name="website" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <input type="hidden" id="waitlist-modal-producto" name="producto_interes" value="" />
+
+        <div class="flex flex-col gap-2">
+          <label for="waitlist-modal-email" class="text-sm font-semibold text-ink">Correo electrónico <span class="text-flame-500">*</span></label>
+          <input 
+            type="email" 
+            id="waitlist-modal-email" 
+            name="email" 
+            required 
+            placeholder="tucorreo@email.com"
+            class="w-full rounded-2xl border border-hairline bg-cream/50 px-4 py-3.5 text-[0.95rem] text-ink transition-colors placeholder:text-slate-muted/70 focus:border-flame-400 focus:bg-white focus:outline-none"
+          />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div class="flex flex-col gap-2">
+            <label for="waitlist-modal-telefono" class="text-sm font-semibold text-ink">Teléfono <span class="text-slate-muted font-normal">(Opcional)</span></label>
+            <input 
+              type="tel" 
+              id="waitlist-modal-telefono" 
+              name="telefono" 
+              placeholder="+58 412 000 0000"
+              class="w-full rounded-2xl border border-hairline bg-cream/50 px-4 py-3.5 text-[0.95rem] text-ink transition-colors placeholder:text-slate-muted/70 focus:border-flame-400 focus:bg-white focus:outline-none"
+            />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label for="waitlist-modal-ciudad" class="text-sm font-semibold text-ink">Ciudad <span class="text-slate-muted font-normal">(Opcional)</span></label>
+            <input 
+              type="text" 
+              id="waitlist-modal-ciudad" 
+              name="ciudad" 
+              placeholder="Caracas, Valencia..."
+              class="w-full rounded-2xl border border-hairline bg-cream/50 px-4 py-3.5 text-[0.95rem] text-ink transition-colors placeholder:text-slate-muted/70 focus:border-flame-400 focus:bg-white focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <button 
+          type="submit" 
+          id="waitlist-modal-submit"
+          class="mt-2 w-full flex items-center justify-center gap-2 rounded-full bg-flame-500 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-flame-500/25 hover:bg-flame-600 focus:outline-none focus:ring-2 focus:ring-flame-500 focus:ring-offset-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed group"
+        >
+          <span>Unirme a la lista</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+      </form>
+
+      <!-- Success State -->
+      <div id="waitlist-modal-success" class="hidden flex-col items-center justify-center py-8 text-center animate-in fade-in duration-300">
+        <div class="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h4 class="font-display text-2xl font-bold text-ink mb-2">¡Anotado!</h4>
+        <p class="text-ink-soft max-w-[280px] mx-auto">
+          Te avisaremos en cuanto el equipo esté disponible.
+        </p>
+        <button type="button" id="waitlist-modal-success-close" class="mt-8 w-full rounded-full border border-hairline bg-white px-6 py-3.5 text-sm font-semibold text-ink shadow-sm hover:bg-cream transition-colors">
+          Cerrar
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('waitlist-modal');
+    const backdrop = document.getElementById('waitlist-modal-backdrop');
+    const card = document.getElementById('waitlist-modal-card');
+    const closeBtn = document.getElementById('waitlist-modal-close');
+    const successCloseBtn = document.getElementById('waitlist-modal-success-close');
+    
+    const form = document.getElementById('waitlist-modal-form');
+    const errorDiv = document.getElementById('waitlist-modal-error');
+    const errorText = document.getElementById('waitlist-modal-error-text');
+    const successDiv = document.getElementById('waitlist-modal-success');
+    const submitBtn = document.getElementById('waitlist-modal-submit');
+    
+    const productNameDisplay = document.getElementById('waitlist-modal-product-name');
+    const productInput = document.getElementById('waitlist-modal-producto');
+    
+    // Open modal triggers
+    const triggerButtons = document.querySelectorAll('[data-waitlist-modal]');
+    
+    function openModal(productName) {
+      // Reset state
+      form.reset();
+      form.classList.remove('hidden');
+      successDiv.classList.add('hidden');
+      successDiv.classList.remove('flex');
+      errorDiv.classList.add('hidden');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `<span>Unirme a la lista</span><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`;
+      
+      // Set product info
+      const name = productName || 'equipo';
+      productNameDisplay.textContent = name;
+      productInput.value = name;
+      
+      // Show modal
+      modal.classList.remove('hidden');
+      
+      // Animate in
+      requestAnimationFrame(() => {
+        card.classList.remove('scale-95', 'translate-y-[10px]', 'opacity-0');
+        card.classList.add('scale-100', 'translate-y-0', 'opacity-100');
+      });
+      
+      // Focus first input
+      setTimeout(() => {
+        document.getElementById('waitlist-modal-email').focus();
+      }, 300);
+    }
+    
+    function closeModal() {
+      // Animate out
+      card.classList.remove('scale-100', 'translate-y-0', 'opacity-100');
+      card.classList.add('scale-95', 'translate-y-[10px]', 'opacity-0');
+      
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 200);
+    }
+    
+    // Attach listeners to triggers
+    triggerButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const productName = btn.getAttribute('data-product-name');
+        openModal(productName);
+      });
+    });
+    
+    // Close listeners
+    closeBtn?.addEventListener('click', closeModal);
+    successCloseBtn?.addEventListener('click', closeModal);
+    backdrop?.addEventListener('click', closeModal);
+    
+    // ESC key to close
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+    
+    // Form submission
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Honeypot check
+      const website = document.getElementById('waitlist-modal-website')?.value;
+      if (website) {
+        // Spam bot detected, silently pretend success
+        showSuccess();
+        return;
+      }
+      
+      const email = document.getElementById('waitlist-modal-email').value.trim();
+      const telefono = document.getElementById('waitlist-modal-telefono').value.trim() || null;
+      const ciudad = document.getElementById('waitlist-modal-ciudad').value.trim() || null;
+      const producto_interes = productInput.value;
+      
+      // Validate at least email is present
+      if (!email) {
+        showError('Por favor ingresa tu correo electrónico.');
+        return;
+      }
+      
+      // Email format basic validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showError('Por favor ingresa un correo electrónico válido.');
+        return;
+      }
+      
+      // Set loading state
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Procesando...`;
+      errorDiv.classList.add('hidden');
+      
+      try {
+        if (!supabaseUrl || !supabaseKey) {
+          throw new Error('Configuración de base de datos incompleta');
+        }
+        
+        // Prepare payload
+        const payload = {
+          nombre: 'Desde catálogo',
+          email,
+          telefono,
+          ciudad,
+          producto_interes,
+          status: 'NEW'
+        };
+        
+        // POST to Supabase REST API
+        const res = await fetch(`${supabaseUrl}/rest/v1/waitlist_lead`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          // Handle unique violation (23505) as success
+          if (res.status === 409 || errorData?.code === '23505') {
+            showSuccess();
+            return;
+          }
+          throw new Error('No pudimos procesar tu solicitud');
+        }
+        
+        showSuccess();
+        
+      } catch (err) {
+        console.error('Waitlist Modal Error:', err);
+        showError('Hubo un problema de conexión. Por favor intenta nuevamente.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span>Unirme a la lista</span><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`;
+      }
+    });
+    
+    function showError(message) {
+      errorText.textContent = message;
+      errorDiv.classList.remove('hidden');
+    }
+    
+    function showSuccess() {
+      form.classList.add('hidden');
+      errorDiv.classList.add('hidden');
+      successDiv.classList.remove('hidden');
+      successDiv.classList.add('flex');
+    }
+  });
+</script>

@@ -58,7 +58,7 @@ const priceFor = (monthly: number, plan: 'libre' | 'anual') =>
     <!-- Grid de productos -->
     <div class="reveal mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {
-        products.map((p) => (
+        products.map((p, i) => (
           <article class="group flex flex-col overflow-hidden rounded-3xl border border-hairline bg-white transition-all hover:border-flame-200 hover:shadow-2xl hover:shadow-ink/6">
             <div class="relative">
               <ProductImage slug={p.slug} name={p.name} class="aspect-4/3" />
@@ -94,22 +94,48 @@ const priceFor = (monthly: number, plan: 'libre' | 'anual') =>
                   </div>
                 </div>
 
-                <a
-                  href="#lista-de-espera"
-                  data-product-cta={p.name}
-                  class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-3.5 text-sm font-semibold text-white transition-all hover:bg-flame-500 active:scale-[0.98]"
-                >
-                  Lo quiero
-                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                    <path
-                      d="M4 10h11m0 0-4-4m4 4-4 4"
-                      stroke="currentColor"
-                      stroke-width="1.7"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </a>
+                {i < 3 ? (
+                  /* Primeros 3 productos: disponibles para renta inmediata */
+                  <button
+                    type="button"
+                    data-rent-modal
+                    data-product-slug={p.slug}
+                    data-product-name={p.name}
+                    data-product-monthly={p.monthly}
+                    class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-flame-500 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-flame-500/25 transition-all hover:bg-flame-600 hover:shadow-xl active:scale-[0.98] cursor-pointer"
+                  >
+                    Obtenlo ahora
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                      <path
+                        d="M4 10h11m0 0-4-4m4 4-4 4"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                ) : (
+                  /* Resto de productos: lista de espera */
+                  <button
+                    type="button"
+                    data-waitlist-modal
+                    data-product-name={p.name}
+                    class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-3.5 text-sm font-semibold text-white transition-all hover:bg-flame-500 active:scale-[0.98] cursor-pointer"
+                  >
+                    Lista de espera
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                      <path
+                        d="M10 3v7l4 2"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                      <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" fill="none" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
           </article>

@@ -8,6 +8,8 @@ import Compare from '../components/Compare.astro';
 import Faq from '../components/Faq.astro';
 import Waitlist from '../components/Waitlist.astro';
 import Footer from '../components/Footer.astro';
+import RentModal from '../components/RentModal.astro';
+import WaitlistModal from '../components/WaitlistModal.astro';
 ---
 
 <Base>
@@ -23,4 +25,8 @@ import Footer from '../components/Footer.astro';
   </main>
 
   <Footer />
+
+  {/* Modales globales (posicionados con fixed, fuera del flujo) */}
+  <RentModal />
+  <WaitlistModal />
 </Base>
