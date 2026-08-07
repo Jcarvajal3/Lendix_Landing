@@ -21,14 +21,11 @@ export type Product = {
   entrega: 'inmediata' | 'pedido';
 };
 
-/** Descuento por comprometerse a 12 meses en vez de ir mes a mes. */
-export const LOYALTY_DISCOUNT = 0;
+export type Plan = '6meses';
 
-export type Plan = 'libre' | 'anual';
-
-/** Renta quincenal segun el plan elegido. */
-export function priceFor(biweekly: number, plan: Plan): number {
-  return plan === 'libre' ? biweekly : Math.round(biweekly * (1 - LOYALTY_DISCOUNT));
+/** Renta quincenal. */
+export function priceFor(biweekly: number, _plan?: Plan): number {
+  return biweekly;
 }
 
 export const products: Product[] = [
@@ -74,7 +71,7 @@ export const products: Product[] = [
     retail: 899,
     specs: ['Intel i7 11ma Gen', '16 GB RAM · 256 GB SSD', 'Windows'],
     badge: 'Ideal Trabajo',
-    entrega: 'inmediata',
+    entrega: 'pedido',
   },
   {
     slug: 'iphone-14',
@@ -85,7 +82,7 @@ export const products: Product[] = [
     retail: 599,
     specs: ['Pantalla OLED 6.1"', 'Chip A15 Bionic', '128 GB Almacenamiento'],
     badge: 'Popular',
-    entrega: 'inmediata',
+    entrega: 'pedido',
   },
   {
     slug: 'lavavajillas-euhomy',

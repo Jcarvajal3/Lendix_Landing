@@ -27,28 +27,44 @@
     </button>
 
     <div class="p-8">
-      <p class="eyebrow mb-2">Configura tu plan</p>
+      <p class="eyebrow mb-2">Plan de renta</p>
       <h3 class="text-2xl font-display font-bold text-ink mb-6" id="rent-modal-title">Obtén tu Producto</h3>
       
-      <div class="space-y-4 mb-6">
-        <p class="text-sm font-medium text-ink-soft">Selecciona el tiempo de renta:</p>
-        <div class="grid grid-cols-2 gap-4">
-          <!-- 6 Months / Plan Libre -->
-          <label class="relative flex flex-col p-4 border-2 border-slate-muted rounded-2xl cursor-pointer hover:border-flame-300 transition-colors has-[:checked]:border-flame-500 has-[:checked]:bg-flame-50/50">
-            <input type="radio" name="rent_plan" value="6" class="peer sr-only" checked>
-            <span class="text-sm font-bold text-ink mb-1">Plan Libre (6m)</span>
-            <span class="text-xs text-ink-soft mb-2">Flexibilidad total</span>
-            <span class="text-lg font-bold text-ink mt-auto block" id="price-6m">$0 cada 2 semanas</span>
-          </label>
-
-          <!-- 12 Months / Plan Anual -->
-          <label class="relative flex flex-col p-4 border-2 border-slate-muted rounded-2xl cursor-pointer hover:border-flame-300 transition-colors has-[:checked]:border-flame-500 has-[:checked]:bg-flame-50/50">
-            <input type="radio" name="rent_plan" value="12" class="peer sr-only">
-            <span class="text-sm font-bold text-ink mb-1">Plan Anual (12m)</span>
-            <span class="text-xs text-ink-soft mb-2">El mejor precio</span>
-            <span class="text-lg font-bold text-ink mt-auto block" id="price-12m">$0 cada 2 semanas</span>
-          </label>
+      <div class="space-y-4 mb-5">
+        <p class="text-sm font-medium text-ink-soft">Tiempo de renta:</p>
+        <div class="flex items-center justify-between p-4 border border-hairline bg-cream/60 rounded-2xl">
+          <div>
+            <span class="text-sm font-bold text-ink block">Plan 6 meses</span>
+            <span class="text-xs text-slate-muted">Devuelve, renueva o compra al finalizar</span>
+          </div>
+          <span class="text-base font-bold text-flame-600" id="price-6m">$0 cada 2 semanas</span>
         </div>
+      </div>
+
+      <!-- Aclaratorias al finalizar alquiler -->
+      <div class="mb-6 rounded-2xl border border-hairline bg-cream/40 p-4">
+        <p class="text-xs font-semibold tracking-wide text-slate-muted uppercase mb-3">
+          Después de terminar tu alquiler de 6 meses:
+        </p>
+        <ul class="space-y-2.5 text-sm font-medium text-ink">
+          <li class="flex items-center justify-between gap-2">
+            <span class="flex items-center gap-2">
+              <svg class="h-4 w-4 text-flame-500 shrink-0" viewBox="0 0 20 20" fill="none">
+                <path d="m5 10 3.5 3.5L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Renueva a un menor precio
+            </span>
+            <span class="inline-flex items-center gap-1 rounded-full bg-flame-500 px-2.5 py-0.5 text-[0.7rem] font-bold text-white uppercase tracking-wider shadow-xs">
+              🔥 Hot deal
+            </span>
+          </li>
+          <li class="flex items-center gap-2">
+            <svg class="h-4 w-4 text-flame-500 shrink-0" viewBox="0 0 20 20" fill="none">
+              <path d="m5 10 3.5 3.5L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Cómpralo con descuento</span>
+          </li>
+        </ul>
       </div>
 
       <div class="bg-cream p-6 rounded-3xl mb-6 text-center border border-slate-muted/50">
@@ -87,9 +103,6 @@
 
   let isAuthenticated = false;
 
-  // Constants based on business logic
-  const LOYALTY_DISCOUNT = 0;
-  
   // State
   let currentProduct = {
     slug: '',
@@ -104,11 +117,9 @@
   const closeBtn = document.getElementById('rent-modal-close');
   const title = document.getElementById('rent-modal-title');
   const price6m = document.getElementById('price-6m');
-  const price12m = document.getElementById('price-12m');
   const total = document.getElementById('rent-modal-total');
   const submitBtn = document.getElementById('rent-modal-submit');
   const disclaimer = document.getElementById('rent-modal-disclaimer');
-  const radios = document.querySelectorAll<HTMLInputElement>('input[name="rent_plan"]');
   
   // Check auth status
   initSessionFromCookies().then(session => {
@@ -128,39 +139,21 @@
   // Formatting
   const formatMoney = (val: number) => `$${val}`;
   
-  // Price calculation
-  const getPrice = (base: number, months: number) => {
-    if (months === 12) {
-      return Math.round(base * (1 - LOYALTY_DISCOUNT));
-    }
-    return base;
-  };
-  
-  // Update displayed total based on selected plan
+  // Update displayed total
   const updatePrices = () => {
     if (!total) return;
-    const selected = document.querySelector<HTMLInputElement>('input[name="rent_plan"]:checked');
-    if (selected) {
-      const months = parseInt(selected.value, 10);
-      const price = getPrice(currentProduct.biweekly, months);
-      total.innerHTML = `${formatMoney(price)}<span class="text-xl text-ink-soft font-medium"> cada 2 semanas</span>`;
-    }
+    total.innerHTML = `${formatMoney(currentProduct.biweekly)}<span class="text-xl text-ink-soft font-medium"> cada 2 semanas</span>`;
   };
 
   // Open modal
   const openModal = (slug: string, name: string, biweekly: number) => {
-    if (!modal || !card || !title || !price6m || !price12m) return;
+    if (!modal || !card || !title || !price6m) return;
 
     currentProduct = { slug, name, biweekly };
 
     // Update texts
     title.textContent = `Obtén tu ${name}`;
-    price6m.textContent = `${formatMoney(getPrice(biweekly, 6))} cada 2 semanas`;
-    price12m.textContent = `${formatMoney(getPrice(biweekly, 12))} cada 2 semanas`;
-    
-    // Reset selection to 6m by default
-    const defaultRadio = document.querySelector<HTMLInputElement>('input[name="rent_plan"][value="6"]');
-    if (defaultRadio) defaultRadio.checked = true;
+    price6m.textContent = `${formatMoney(biweekly)} cada 2 semanas`;
     updatePrices();
     
     // Show with animation
@@ -205,9 +198,7 @@
       }
     }
   });
-  
-  radios.forEach(r => r.addEventListener('change', updatePrices));
-  
+
   if (closeBtn) closeBtn.addEventListener('click', closeModal);
   if (backdrop) backdrop.addEventListener('click', closeModal);
   
@@ -220,11 +211,8 @@
   // Handle Google Auth Submit
   if (submitBtn) {
     submitBtn.addEventListener('click', async () => {
-      const selected = document.querySelector<HTMLInputElement>('input[name="rent_plan"]:checked');
-      if (!selected) return;
-      
-      const termMonths = parseInt(selected.value, 10);
-      const biweeklyRent = getPrice(currentProduct.biweekly, termMonths);
+      const termMonths = 6;
+      const biweeklyRent = currentProduct.biweekly;
 
       // Guardar la seleccion ANTES de salir a Google, para poder mostrarla
       // en /completar-registro cuando el usuario regrese.

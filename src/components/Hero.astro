@@ -7,13 +7,13 @@ const products = await getProducts();
 
 // El precio de entrada se calcula del catalogo real: nunca puede mentir.
 const cheapest = products.reduce((a, b) => (b.biweekly < a.biweekly ? b : a));
-const star = products.find((p) => p.slug === 'dell-latitude-14') ?? products[0];
+const star = products.find((p) => p.slug === 'playstation-5-digital') ?? products[0];
 
 const garantias = [
   'Delivery gratis a tu hogar',
   '0$ de inicial y depósito',
   'Usa siempre la última tecnología',
-  'x30 veces más barato que comprar',
+  'Hasta x30 veces más barato que comprar',
 ];
 ---
 
@@ -45,14 +45,14 @@ const garantias = [
         </span>
 
         <h1 class="mt-3 text-[2.1rem] leading-[1.06] font-bold sm:text-6xl lg:text-[4.15rem]">
-          Deja de comprar.
+          6 meses de alquiler.
           <br />
-          <span class="text-flame-700">Alquilalo y paga</span>
-          cada 2 semanas.
+          <span class="text-flame-700">Luego cómpralo</span>
+          o renueva por menos.
         </h1>
 
         <p class="mt-3 max-w-xl text-base leading-relaxed text-ink-soft">
-          Consolas, laptops y electrodomésticos por una cuota fija cada 2 semanas. Úsalo. Devuélvelo. O quédatelo con descuento.
+          Alquila tus favoritos. A los 6 meses, cómpralos o renueva más barato.
         </p>
 
         <!-- CTA principal: el usuario elige producto y lo renta -->

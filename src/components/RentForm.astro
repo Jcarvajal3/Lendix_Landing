@@ -76,7 +76,7 @@ const pasos = [
               <p class="mt-1 truncate font-display text-[1.05rem] font-bold text-ink" data-resumen-producto>
                 Elige tu producto
               </p>
-              <p class="mt-0.5 text-[0.8rem] text-slate-muted" data-resumen-plan>Plan mes a mes</p>
+              <p class="mt-0.5 text-[0.8rem] text-slate-muted" data-resumen-plan>Plan 6 meses</p>
             </div>
             <div class="shrink-0 text-right">
               <p class="font-display text-2xl font-bold text-flame-600" data-resumen-precio>—</p>
@@ -298,16 +298,12 @@ const pasos = [
     const configured = Boolean(supabaseUrl && supabaseKey && supabaseUrl.startsWith('http'));
     const porNombre = new Map(catalogo.map((p) => [p.name, p]));
 
-    /** El plan vive en <html data-plan>: el selector del catalogo lo escribe. */
-    const planActual = () => document.documentElement.getAttribute('data-plan') || 'libre';
-
     // ---- Resumen del pedido -------------------------------------------------
     function pintarResumen() {
       const nombre = select ? select.value : '';
-      const plan = planActual();
       const item = porNombre.get(nombre);
 
-      if (resPlan) resPlan.textContent = plan === 'anual' ? 'Plan 12 meses' : 'Plan mes a mes';
+      if (resPlan) resPlan.textContent = 'Plan 6 meses';
 
       if (!nombre) {
         if (resProducto) resProducto.textContent = 'Elige tu producto';
@@ -323,11 +319,10 @@ const pasos = [
         return;
       }
 
-      if (resPrecio) resPrecio.textContent = '$' + (plan === 'anual' ? item.anual : item.libre);
+      if (resPrecio) resPrecio.textContent = '$' + item.libre;
     }
 
     select?.addEventListener('change', pintarResumen);
-    document.addEventListener('lendix:plan', pintarResumen);
     pintarResumen();
 
     // ---- Cualquier boton [data-rentar] del sitio trae al usuario aqui -------
@@ -338,8 +333,7 @@ const pasos = [
       const nombre = trigger.getAttribute('data-rentar');
       if (select && nombre) {
         // Si el producto no esta en el catalogo, cae en "Otro".
-        const existe = Array.from(select.options).some((o) => o.value === nombre);
-        select.value = existe ? nombre : 'Otro';
+        select.value = porNombre.has(nombre) ? nombre : 'Otro';
         pintarResumen();
       }
 
@@ -390,11 +384,10 @@ const pasos = [
 
       // El mensaje de WhatsApp llega escrito: el usuario solo pulsa enviar.
       if (hasWhatsapp && successWa) {
-        const plan = payload.plan === 'anual' ? '12 meses' : 'mes a mes';
         const precio = payload.precio_quincena ? ` (${'$'}${payload.precio_quincena}/quincena)` : '';
         const texto =
           `Hola, soy ${payload.nombre}. Acabo de solicitar en la web: ` +
-          `${payload.producto_interes}${precio}, plan ${plan}.`;
+          `${payload.producto_interes}${precio}, plan 6 meses.`;
         successWa.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(texto)}`;
       }
 
@@ -426,7 +419,6 @@ const pasos = [
       if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(correo))
         return showError('Revisa tu correo, parece que tiene un error.');
 
-      const plan = planActual();
       const item = porNombre.get(producto);
 
       const payload = {
@@ -436,8 +428,8 @@ const pasos = [
         ciudad: String(data.get('ciudad') || '').trim() || null,
         producto_interes: producto,
         mensaje: String(data.get('mensaje') || '').trim() || null,
-        plan,
-        precio_quincena: item ? (plan === 'anual' ? item.anual : item.libre) : null,
+        plan: '6meses',
+        precio_quincena: item ? item.libre : null,
         ...attribution(),
       };
 

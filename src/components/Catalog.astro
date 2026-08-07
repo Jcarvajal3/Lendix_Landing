@@ -9,55 +9,21 @@ const products = [...rawProducts].sort((a, b) => {
   return 0;
 });
 
-const LOYALTY_DISCOUNT = 0;
-const priceFor = (biweekly: number, plan: 'libre' | 'anual') =>
-  plan === 'libre' ? biweekly : Math.round(biweekly * (1 - LOYALTY_DISCOUNT));
 ---
 
 <section id="catalogo" class="scroll-mt-24 bg-white py-20 sm:py-28">
   <div class="container-x">
-    <div class="reveal flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-      <div class="max-w-2xl">
-        <p class="eyebrow">Catalogo de lanzamiento</p>
-        <h2 class="mt-5 text-3xl leading-[1.12] font-bold sm:text-5xl lg:text-[3.4rem]">
-          No compras el producto.
-          <br class="hidden sm:block" />
-          <span class="text-flame-500">Pagas por usarlo</span>, el tiempo que
-          <span class="text-flame-500">tu decidas</span>.
-        </h2>
-        <p class="mt-5 text-lg leading-relaxed text-ink-soft">
-          Ahorra y ten lo ultimo en tecnologia.
-        </p>
-      </div>
-
-      <!-- Selector de plan -->
-      <div class="shrink-0">
-        <p class="mb-2.5 text-sm font-medium text-slate-muted">Elige tu plan</p>
-        <div
-          class="inline-flex rounded-full border border-hairline bg-cream p-1"
-          role="group"
-          aria-label="Selector de plan de renta"
-        >
-          <button
-            type="button"
-            data-plan="libre"
-            aria-pressed="true"
-            class="rounded-full px-5 py-2.5 text-sm font-semibold transition-all data-[active]:bg-white data-[active]:text-ink data-[active]:shadow-sm text-ink-soft"
-            data-active
-          >
-            6 Meses
-          </button>
-          <button
-            type="button"
-            data-plan="anual"
-            aria-pressed="false"
-            class="rounded-full px-5 py-2.5 text-sm font-semibold transition-all data-[active]:bg-white data-[active]:text-ink data-[active]:shadow-sm text-ink-soft"
-          >
-            12 meses
-          </button>
-        </div>
-        <p class="mt-2.5 max-w-[19rem] text-[0.8rem] leading-relaxed text-slate-muted" data-plan-hint></p>
-      </div>
+    <div class="reveal max-w-2xl">
+      <p class="eyebrow">Catálogo de lanzamiento</p>
+      <h2 class="mt-5 text-3xl leading-[1.12] font-bold sm:text-5xl lg:text-[3.4rem]">
+        No compras el producto.
+        <br class="hidden sm:block" />
+        <span class="text-flame-500">Pagas por usarlo</span>, el tiempo que
+        <span class="text-flame-500">tú decidas</span>.
+      </h2>
+      <p class="mt-5 text-lg leading-relaxed text-ink-soft">
+        Ahorra y ten lo último en tecnología con rentas a 6 meses.
+      </p>
     </div>
 
     <!-- Grid de productos -->
@@ -92,7 +58,7 @@ const priceFor = (biweekly: number, plan: 'libre' | 'anual') =>
                       <div>
                         <p class="text-[0.8rem] text-slate-muted">Paga</p>
                         <p class="font-display text-3xl font-bold text-ink">
-                          $<span data-price data-libre={p.biweekly} data-anual={priceFor(p.biweekly, 'anual')}>{p.biweekly}</span><span class="text-base font-semibold text-slate-muted"> cada 2 semanas</span>
+                          ${p.biweekly}<span class="text-base font-semibold text-slate-muted"> cada 2 semanas</span>
                         </p>
                       </div>
                       <div class="text-right">
@@ -190,35 +156,6 @@ const priceFor = (biweekly: number, plan: 'libre' | 'anual') =>
 
 <script is:inline>
   (function () {
-    const buttons = document.querySelectorAll('[data-plan]');
-    const prices = document.querySelectorAll('[data-price]');
-    const hint = document.querySelector('[data-plan-hint]');
-    if (!buttons.length) return;
-
-    const hints = {
-      libre: '',
-      anual: 'Te comprometes 12 meses.',
-    };
-
-    buttons.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const plan = btn.getAttribute('data-plan');
-
-        buttons.forEach((other) => {
-          const active = other === btn;
-          other.toggleAttribute('data-active', active);
-          other.setAttribute('aria-pressed', String(active));
-        });
-
-        prices.forEach((el) => {
-          const value = el.getAttribute('data-' + plan);
-          if (value) el.textContent = value;
-        });
-
-        if (hint) hint.textContent = hints[plan];
-      });
-    });
-
     // Preselecciona el producto en el formulario de lista de espera.
     document.querySelectorAll('[data-product-cta]').forEach((cta) => {
       cta.addEventListener('click', () => {
