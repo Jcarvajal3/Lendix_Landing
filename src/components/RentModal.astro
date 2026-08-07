@@ -38,7 +38,7 @@
             <input type="radio" name="rent_plan" value="6" class="peer sr-only" checked>
             <span class="text-sm font-bold text-ink mb-1">Plan Libre (6m)</span>
             <span class="text-xs text-ink-soft mb-2">Flexibilidad total</span>
-            <span class="text-lg font-bold text-ink mt-auto block" id="price-6m">$0/quincena</span>
+            <span class="text-lg font-bold text-ink mt-auto block" id="price-6m">$0 cada 2 semanas</span>
           </label>
 
           <!-- 12 Months / Plan Anual -->
@@ -46,7 +46,7 @@
             <input type="radio" name="rent_plan" value="12" class="peer sr-only">
             <span class="text-sm font-bold text-ink mb-1">Plan Anual (12m)</span>
             <span class="text-xs text-ink-soft mb-2">El mejor precio</span>
-            <span class="text-lg font-bold text-ink mt-auto block" id="price-12m">$0/quincena</span>
+            <span class="text-lg font-bold text-ink mt-auto block" id="price-12m">$0 cada 2 semanas</span>
           </label>
         </div>
       </div>
@@ -54,7 +54,7 @@
       <div class="bg-cream p-6 rounded-3xl mb-6 text-center border border-slate-muted/50">
         <p class="text-sm text-ink-soft mb-1">Total a pagar hoy (1ra quincena):</p>
         <div class="text-4xl font-display font-black text-ink tracking-tight" id="rent-modal-total">
-          $0<span class="text-xl text-ink-soft font-medium">/quincena</span>
+          $0<span class="text-xl text-ink-soft font-medium"> cada 2 semanas</span>
         </div>
       </div>
 
@@ -143,7 +143,7 @@
     if (selected) {
       const months = parseInt(selected.value, 10);
       const price = getPrice(currentProduct.biweekly, months);
-      total.innerHTML = `${formatMoney(price)}<span class="text-xl text-ink-soft font-medium">/quincena</span>`;
+      total.innerHTML = `${formatMoney(price)}<span class="text-xl text-ink-soft font-medium"> cada 2 semanas</span>`;
     }
   };
 
@@ -155,8 +155,8 @@
 
     // Update texts
     title.textContent = `Obtén tu ${name}`;
-    price6m.textContent = `${formatMoney(getPrice(biweekly, 6))}/quincena`;
-    price12m.textContent = `${formatMoney(getPrice(biweekly, 12))}/quincena`;
+    price6m.textContent = `${formatMoney(getPrice(biweekly, 6))} cada 2 semanas`;
+    price12m.textContent = `${formatMoney(getPrice(biweekly, 12))} cada 2 semanas`;
     
     // Reset selection to 6m by default
     const defaultRadio = document.querySelector<HTMLInputElement>('input[name="rent_plan"][value="6"]');
@@ -201,7 +201,7 @@
       const biweeklyStr = btn.getAttribute('data-product-biweekly');
 
       if (slug && name && biweeklyStr) {
-        openModal(slug, name, parseInt(biweeklyStr, 10));
+        openModal(slug, name, parseFloat(biweeklyStr));
       }
     }
   });

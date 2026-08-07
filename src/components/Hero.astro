@@ -7,7 +7,7 @@ const products = await getProducts();
 
 // El precio de entrada se calcula del catalogo real: nunca puede mentir.
 const cheapest = products.reduce((a, b) => (b.biweekly < a.biweekly ? b : a));
-const star = products.find((p) => p.slug === 'nintendo-switch-2') ?? products[0];
+const star = products.find((p) => p.slug === 'dell-latitude-14') ?? products[0];
 
 const garantias = [
   'Delivery gratis a tu hogar',
@@ -47,12 +47,12 @@ const garantias = [
         <h1 class="mt-3 text-[2.1rem] leading-[1.06] font-bold sm:text-6xl lg:text-[4.15rem]">
           Deja de comprar.
           <br />
-          <span class="text-flame-700">Usalo por un alquiler</span>
-          quincenal.
+          <span class="text-flame-700">Alquilalo y paga</span>
+          cada 2 semanas.
         </h1>
 
         <p class="mt-3 max-w-xl text-base leading-relaxed text-ink-soft">
-          Consolas, laptops y electrodomésticos por una cuota fija cada quincena. Úsalo. Devuélvelo. O quédatelo con descuento.
+          Consolas, laptops y electrodomésticos por una cuota fija cada 2 semanas. Úsalo. Devuélvelo. O quédatelo con descuento.
         </p>
 
         <!-- CTA principal: el usuario elige producto y lo renta -->
@@ -145,22 +145,24 @@ const garantias = [
 
             <div class="mt-5 flex items-end justify-between gap-4 border-t border-hairline pt-5">
               <div>
-                <p class="text-sm text-slate-muted">Renta desde</p>
+                <p class="text-sm text-slate-muted">Paga</p>
                 <p class="font-display text-3xl font-bold text-ink">
-                  ${star.biweekly}<span class="text-base font-semibold text-slate-muted">/quincena</span>
+                  ${star.biweekly}<span class="text-base font-semibold text-slate-muted"> cada 2 semanas</span>
                 </p>
               </div>
               <div class="text-right">
-                <p class="text-sm text-slate-muted">Comprarla cuesta</p>
+                <p class="text-sm text-slate-muted">Otras tiendas</p>
                 <p class="font-display text-lg font-semibold text-slate-muted line-through">${star.retail}</p>
               </div>
             </div>
 
             <button
               type="button"
-              data-rentar={star.name}
-              data-precio={star.biweekly}
-              class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-3.5 text-sm font-semibold text-white transition-all hover:bg-flame-500 active:scale-[0.98]"
+              data-rent-modal
+              data-product-slug={star.slug}
+              data-product-name={star.name}
+              data-product-biweekly={star.biweekly}
+              class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-3.5 text-sm font-semibold text-white transition-all hover:bg-flame-500 active:scale-[0.98] cursor-pointer"
             >
               Rentar esta {star.name}
             </button>
