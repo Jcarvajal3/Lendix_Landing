@@ -1,6 +1,8 @@
 ---
 import ProductImage from './ProductImage.astro';
-import { products } from '../data/products';
+import { getProducts } from '../data/products';
+
+const products = await getProducts();
 
 const LOYALTY_DISCOUNT = 0;
 const priceFor = (biweekly: number, plan: 'libre' | 'anual') =>

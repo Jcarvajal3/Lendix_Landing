@@ -1,6 +1,8 @@
 ---
 import ProductImage from './ProductImage.astro';
-import { products } from '../data/products';
+import { getProducts } from '../data/products';
+
+const products = await getProducts();
 
 // Usamos un producto real del catalogo para que los precios de esta seccion
 // nunca se desincronicen de los que muestra la grilla de productos.

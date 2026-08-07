@@ -1,7 +1,9 @@
 ---
 import ProductImage from './ProductImage.astro';
-import { products } from '../data/products';
+import { getProducts } from '../data/products';
 import { hasWhatsapp, whatsappLink } from '../data/site';
+
+const products = await getProducts();
 
 // El precio de entrada se calcula del catalogo real: nunca puede mentir.
 const cheapest = products.reduce((a, b) => (b.biweekly < a.biweekly ? b : a));

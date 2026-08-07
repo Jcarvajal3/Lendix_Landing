@@ -58,6 +58,17 @@ import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseKey } from '.
           />
         </div>
 
+        <div class="flex flex-col gap-2">
+          <label for="waitlist-modal-producto-input" class="text-sm font-semibold text-ink">¿Qué producto buscas? <span class="text-slate-muted font-normal">(Opcional)</span></label>
+          <input 
+            type="text" 
+            id="waitlist-modal-producto-input" 
+            name="producto_input" 
+            placeholder="Ej: Nintendo Switch 2, MacBook Air, Smart TV..."
+            class="w-full rounded-2xl border border-hairline bg-cream/50 px-4 py-3.5 text-[0.95rem] text-ink transition-colors placeholder:text-slate-muted/70 focus:border-flame-400 focus:bg-white focus:outline-none"
+          />
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div class="flex flex-col gap-2">
             <label for="waitlist-modal-telefono" class="text-sm font-semibold text-ink">Teléfono <span class="text-slate-muted font-normal">(Opcional)</span></label>
@@ -165,6 +176,10 @@ import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseKey } from '.
       const name = productName || 'equipo';
       productNameDisplay.textContent = name;
       productInput.value = name;
+      const productInputField = document.getElementById('waitlist-modal-producto-input');
+      if (productInputField) {
+        productInputField.value = productName || '';
+      }
       
       // Show modal
       modal.classList.remove('hidden');
@@ -227,7 +242,8 @@ import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseKey } from '.
       const email = document.getElementById('waitlist-modal-email').value.trim();
       const telefono = document.getElementById('waitlist-modal-telefono').value.trim() || null;
       const ciudad = document.getElementById('waitlist-modal-ciudad').value.trim() || null;
-      const producto_interes = productInput.value;
+      const productoUserTyped = document.getElementById('waitlist-modal-producto-input')?.value.trim();
+      const producto_interes = productoUserTyped || productInput.value || 'General';
       
       // Validate at least email is present
       if (!email) {

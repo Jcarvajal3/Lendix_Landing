@@ -2,8 +2,9 @@
 export const prerender = false;
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
-import { products, firstMonthSaving } from '../../data/products';
+import { getProducts, firstMonthSaving } from '../../data/products';
 
+const products = await getProducts();
 const totalProducts = products.length;
 const avgBiweekly = Math.round(products.reduce((acc, p) => acc + p.biweekly, 0) / (totalProducts || 1));
 

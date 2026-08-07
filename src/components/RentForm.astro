@@ -1,8 +1,10 @@
 ---
-import { products, priceFor } from '../data/products';
+import { getProducts, priceFor } from '../data/products';
 import { hasWhatsapp, whatsappNumber, email as contactEmail } from '../data/site';
 
 import { SUPABASE_URL as supabaseUrl, SUPABASE_ANON_KEY as supabaseKey } from '../lib/env';
+
+const products = await getProducts();
 
 // El resumen del pedido necesita el precio de los dos planes de cada producto.
 const catalogo = products.map((p) => ({

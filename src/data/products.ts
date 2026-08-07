@@ -1,3 +1,5 @@
+import { supabaseAdmin } from '../lib/supabase-admin';
+
 export type Product = {
   /** slug usado tambien como nombre del archivo de imagen en /public/products */
   slug: string;
@@ -162,3 +164,37 @@ export const products: Product[] = [
 export function firstMonthSaving(p: Product): number {
   return p.retail - p.biweekly * 2;
 }
+
+/**
+ * Obtiene la lista completa de productos fusionando el catálogo estático con
+ * cualquier override de precio guardado en la tabla `product_overrides` de Supabase.
+ */
+export async function getProducts(): Promise<Product[]> {
+  try {
+    const { data: overrides, error } = await supabaseAdmin
+      .from('product_overrides')
+      .select('slug, biweekly, retail');
+
+    if (error || !overrides || overrides.length === 0) {
+      return products;
+    }
+
+    const map = new Map(overrides.map((o: any) => [o.slug, o]));
+
+    return products.map((p) => {
+      const override = map.get(p.slug);
+      if (override) {
+        return {
+          ...p,
+          biweekly: Number(override.biweekly),
+          retail: Number(override.retail),
+        };
+      }
+      return p;
+    });
+  } catch (err) {
+    console.error('Error al obtener overrides de productos de Supabase:', err);
+    return products;
+  }
+}
+
