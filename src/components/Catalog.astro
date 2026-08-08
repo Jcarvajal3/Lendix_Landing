@@ -52,74 +52,58 @@ const products = [...rawProducts].sort((a, b) => {
               </ul>
 
               <div class="mt-auto pt-6">
+                <div class="flex items-end justify-between gap-3 border-t border-hairline pt-5">
+                  <div>
+                    <p class="text-[0.8rem] text-slate-muted">Paga</p>
+                    <p class="font-display text-3xl font-bold text-ink">
+                      ${p.biweekly}<span class="text-base font-semibold text-slate-muted"> cada 2 semanas</span>
+                    </p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-[0.8rem] text-slate-muted">Otras tiendas</p>
+                    <p class="font-display text-base font-semibold text-slate-muted line-through">${p.retail}</p>
+                  </div>
+                </div>
+
                 {p.entrega === 'inmediata' ? (
-                  <>
-                    <div class="flex items-end justify-between gap-3 border-t border-hairline pt-5">
-                      <div>
-                        <p class="text-[0.8rem] text-slate-muted">Paga</p>
-                        <p class="font-display text-3xl font-bold text-ink">
-                          ${p.biweekly}<span class="text-base font-semibold text-slate-muted"> cada 2 semanas</span>
-                        </p>
-                      </div>
-                      <div class="text-right">
-                        <p class="text-[0.8rem] text-slate-muted">Otras tiendas</p>
-                        <p class="font-display text-base font-semibold text-slate-muted line-through">${p.retail}</p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      data-rent-modal
-                      data-product-slug={p.slug}
-                      data-product-name={p.name}
-                      data-product-biweekly={p.biweekly}
-                      class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-flame-500 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-flame-500/25 transition-all hover:bg-flame-600 hover:shadow-xl active:scale-[0.98] cursor-pointer"
-                    >
-                      Obtenlo ahora
-                      <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                        <path
-                          d="M4 10h11m0 0-4-4m4 4-4 4"
-                          stroke="currentColor"
-                          stroke-width="1.7"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    data-rent-modal
+                    data-product-slug={p.slug}
+                    data-product-name={p.name}
+                    data-product-biweekly={p.biweekly}
+                    class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-flame-500 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-flame-500/25 transition-all hover:bg-flame-600 hover:shadow-xl active:scale-[0.98] cursor-pointer"
+                  >
+                    Obtenlo ahora
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                      <path
+                        d="M4 10h11m0 0-4-4m4 4-4 4"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
                 ) : (
-                  <>
-                    <div class="flex items-end justify-between gap-3 border-t border-hairline pt-5">
-                      <div>
-                        <p class="text-[0.8rem] text-slate-muted">Disponibilidad</p>
-                        <p class="font-display text-lg font-semibold text-ink-soft">Lista de espera</p>
-                      </div>
-                      <div class="text-right">
-                        <span class="inline-flex items-center rounded-full bg-cream px-2.5 py-1 text-xs font-medium text-slate-muted">
-                          Próximamente
-                        </span>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      data-waitlist-modal
-                      data-product-name={p.name}
-                      class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-3.5 text-sm font-semibold text-white transition-all hover:bg-flame-500 active:scale-[0.98] cursor-pointer"
-                    >
-                      Lista de espera
-                      <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                        <path
-                          d="M10 3v7l4 2"
-                          stroke="currentColor"
-                          stroke-width="1.7"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                        <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" fill="none" />
-                      </svg>
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    data-waitlist-modal
+                    data-product-name={p.name}
+                    class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-3.5 text-sm font-semibold text-white transition-all hover:bg-flame-500 active:scale-[0.98] cursor-pointer"
+                  >
+                    Lista de espera
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                      <path
+                        d="M10 3v7l4 2"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                      <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" fill="none" />
+                    </svg>
+                  </button>
                 )}
               </div>
             </div>
