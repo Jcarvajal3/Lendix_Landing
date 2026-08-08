@@ -1,7 +1,19 @@
----
-// RentModal.astro
-// Modal component for initiating a rental flow with Google Auth
----
+<style>
+  @keyframes hot-deal-pulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(255, 107, 44, 0.6);
+    }
+    50% {
+      transform: scale(1.06);
+      box-shadow: 0 0 12px 3px rgba(255, 107, 44, 0.45);
+    }
+  }
+
+  .hot-deal-badge {
+    animation: hot-deal-pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+</style>
 
 <div
   id="rent-modal"
@@ -54,7 +66,11 @@
               </svg>
               Renueva a un menor precio
             </span>
-            <span class="inline-flex items-center gap-1 rounded-full bg-flame-500 px-2.5 py-0.5 text-[0.7rem] font-bold text-white uppercase tracking-wider shadow-xs">
+            <span class="hot-deal-badge inline-flex items-center gap-1.5 rounded-full bg-flame-500 px-2.5 py-0.5 text-[0.7rem] font-bold text-white uppercase tracking-wider shadow-sm">
+              <span class="relative flex h-1.5 w-1.5">
+                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-300 opacity-85"></span>
+                <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-yellow-200"></span>
+              </span>
               🔥 Hot deal
             </span>
           </li>
