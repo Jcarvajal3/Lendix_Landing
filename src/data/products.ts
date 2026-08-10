@@ -21,7 +21,7 @@ export type Product = {
   entrega: 'inmediata' | 'pedido';
 };
 
-export type Plan = '6meses';
+export type Plan = '3meses';
 
 /** Renta quincenal. */
 export function priceFor(biweekly: number, _plan?: Plan): number {

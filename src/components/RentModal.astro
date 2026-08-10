@@ -46,7 +46,7 @@
         <p class="text-sm font-medium text-ink-soft">Tiempo de renta:</p>
         <div class="flex items-center justify-between p-4 border border-hairline bg-cream/60 rounded-2xl">
           <div>
-            <span class="text-sm font-bold text-ink block">Plan 6 meses</span>
+            <span class="text-sm font-bold text-ink block">Plan 3 meses</span>
             <span class="text-xs text-slate-muted">Devuelve, renueva o compra al finalizar</span>
           </div>
           <span class="text-base font-bold text-flame-600" id="price-6m">$0 cada 2 semanas</span>
@@ -56,7 +56,7 @@
       <!-- Aclaratorias al finalizar alquiler -->
       <div class="mb-6 rounded-2xl border border-hairline bg-cream/40 p-4">
         <p class="text-xs font-semibold tracking-wide text-slate-muted uppercase mb-3">
-          Después de terminar tu alquiler de 6 meses:
+          Después de terminar tu alquiler de 3 meses:
         </p>
         <ul class="space-y-2.5 text-sm font-medium text-ink">
           <li class="flex items-center justify-between gap-2">
@@ -227,7 +227,7 @@
   // Handle Google Auth Submit
   if (submitBtn) {
     submitBtn.addEventListener('click', async () => {
-      const termMonths = 6;
+      const termMonths = 3;
       const biweeklyRent = currentProduct.biweekly;
 
       // Guardar la seleccion ANTES de salir a Google, para poder mostrarla
