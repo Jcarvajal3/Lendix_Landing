@@ -2,264 +2,716 @@
 export const prerender = false;
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
-import { getProducts, firstMonthSaving } from '../../data/products';
+import { getProducts, firstMonthSaving, PLAN_KEYS } from '../../data/products';
 
-const products = await getProducts();
-const totalProducts = products.length;
-const avgBiweekly = Math.round(products.reduce((acc, p) => acc + p.biweekly, 0) / (totalProducts || 1));
+const allProducts = await getProducts();
+// Sort by sort_order
+allProducts.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
-const categories = [...new Set(products.map(p => p.category))];
+const count = allProducts.length;
+const avgPrice = count > 0 
+  ? (allProducts.reduce((sum, p) => sum + (p.pricing['6'].cuota || 0), 0) / count).toFixed(2) 
+  : 0;
+const categories = [...new Set(allProducts.map(p => p.category))].filter(Boolean);
 ---
+
 <AdminLayout title="Productos" activePage="productos">
-  <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  <div class="admin-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
     <div>
-      <h1 class="text-2xl font-display font-bold text-ink">Catálogo de Productos</h1>
-      <p class="text-sm text-slate-muted mt-1">
-        {totalProducts} productos listados · Precio promedio: ${avgBiweekly}/quincena
-      </p>
+      <h1 style="margin: 0;">Catálogo de Productos</h1>
+      <p style="margin: 0.5rem 0 0; color: var(--slate-muted);">Total: {count} | Precio Promedio Quincenal: ${avgPrice}</p>
     </div>
+    <button id="add-product-btn" class="admin-btn admin-btn-primary">+ Agregar Producto</button>
   </div>
 
-  <div class="bg-white rounded-xl shadow-sm border border-hairline overflow-hidden mb-6">
-    <div class="p-4 border-b border-hairline bg-slate-50 flex flex-col sm:flex-row gap-4">
-      <!-- Search -->
-      <div class="flex-1">
-        <div class="relative">
-          <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-          </svg>
-          <input 
-            type="text" 
-            id="search-input" 
-            placeholder="Buscar por nombre..." 
-            class="w-full pl-10 pr-4 py-2 rounded-lg border border-hairline focus:border-flame-500 focus:ring-1 focus:ring-flame-500 outline-none transition-shadow text-sm"
-          >
-        </div>
-      </div>
-      <!-- Category -->
-      <div class="w-full sm:w-48">
-        <select id="category-filter" class="w-full px-4 py-2 rounded-lg border border-hairline focus:border-flame-500 focus:ring-1 focus:ring-flame-500 outline-none transition-shadow text-sm bg-white">
-          <option value="all">Todas las categorías</option>
-          {categories.map(c => (
-            <option value={c}>{c}</option>
-          ))}
-        </select>
-      </div>
-      <!-- Entrega -->
-      <div class="w-full sm:w-48">
-        <select id="entrega-filter" class="w-full px-4 py-2 rounded-lg border border-hairline focus:border-flame-500 focus:ring-1 focus:ring-flame-500 outline-none transition-shadow text-sm bg-white">
-          <option value="all">Cualquier entrega</option>
-          <option value="inmediata">Inmediata</option>
-          <option value="pedido">Bajo pedido</option>
-        </select>
-      </div>
-    </div>
+  <div class="admin-filters" style="display: flex; gap: 1rem; margin-bottom: 1rem; align-items: center;">
+    <input type="text" id="filter-search" placeholder="Buscar por nombre..." class="admin-form-input" style="max-width: 300px;" />
+    
+    <select id="filter-category" class="admin-form-input" style="max-width: 200px;">
+      <option value="">Todas las Categorías</option>
+      {categories.map(cat => <option value={cat}>{cat}</option>)}
+    </select>
+    
+    <select id="filter-entrega" class="admin-form-input" style="max-width: 200px;">
+      <option value="">Cualquier Disponibilidad</option>
+      <option value="inmediata">Inmediata</option>
+      <option value="pedido">Bajo Pedido</option>
+    </select>
+    
+    <button id="btn-activos-primero" class="toggle-active-first admin-btn admin-btn-outline">Activos primero</button>
+  </div>
 
-    <div class="admin-table-container">
-      <table class="admin-table w-full text-left" id="products-table">
-        <thead>
-          <tr>
-            <th>Producto</th>
-            <th>Precio Quincenal</th>
-            <th>Precio Retail</th>
-            <th>Ahorro 1er Mes</th>
-            <th>Disponibilidad</th>
-            <th>Badge</th>
-            <th class="text-right">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map(p => (
-            <tr class="product-row" data-name={p.name.toLowerCase()} data-category={p.category} data-entrega={p.entrega}>
-              <td>
-                <div class="flex items-center gap-3">
-                  <img src={`/products/${p.slug}.webp`} alt={p.name} class="w-12 h-12 rounded-lg object-cover border border-hairline bg-slate-50" onerror="this.src='/favicon.svg'" />
+  <div class="admin-table-container">
+    <table class="admin-table" id="products-table" style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th style="text-align: left; padding: 1rem;">Orden</th>
+          <th style="text-align: left; padding: 1rem;">Producto</th>
+          <th style="text-align: left; padding: 1rem;">Precio Quincenal</th>
+          <th style="text-align: left; padding: 1rem;">Precio Retail</th>
+          <th style="text-align: left; padding: 1rem;">Ahorro 1er Mes</th>
+          <th style="text-align: left; padding: 1rem;">Disponibilidad</th>
+          <th style="text-align: left; padding: 1rem;">Badge</th>
+          <th style="text-align: right; padding: 1rem;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="products-tbody">
+        {allProducts.map((p, index) => {
+          const imgSrc = p.image_url || `/products/${p.slug}.webp`;
+          const saving = firstMonthSaving(p, '6');
+          return (
+            <tr class="product-row" data-product={JSON.stringify(p)} style="border-bottom: 1px solid var(--hairline);">
+              <td style="padding: 1rem;">
+                <div class="sort-controls" style="display: flex; align-items: center; gap: 0.5rem;">
+                  <button class="sort-btn sort-up admin-btn-sm admin-btn-outline" title="Subir" data-dir="-1" style="padding: 0.2rem 0.5rem;">▲</button>
+                  <span class="sort-order-num" style="min-width: 20px; text-align: center;">{p.sort_order}</span>
+                  <button class="sort-btn sort-down admin-btn-sm admin-btn-outline" title="Bajar" data-dir="1" style="padding: 0.2rem 0.5rem;">▼</button>
+                </div>
+              </td>
+              <td style="padding: 1rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                  <img src={imgSrc} alt={p.name} width="50" height="50" style="object-fit: contain; background: #fff; border-radius: 4px;" onerror="this.src='/favicon.svg'" />
                   <div>
-                    <div class="font-medium text-ink">{p.name}</div>
-                    <div class="text-xs text-slate-muted">{p.category}</div>
+                    <div style="font-weight: bold; color: var(--ink);">{p.name}</div>
+                    <div style="font-size: 0.85rem; color: var(--slate-muted);">{p.category}</div>
                   </div>
                 </div>
               </td>
-              
-              <!-- Display cells -->
-              <td class="view-cell" data-field="biweekly">
-                <span class="font-semibold text-ink">${p.biweekly}</span><span class="text-xs text-slate-muted">/quincena</span>
+              <td style="padding: 1rem;">${p.pricing['6'].cuota}</td>
+              <td style="padding: 1rem;">${p.retail}</td>
+              <td style="padding: 1rem; color: #10b981; font-weight: bold;">${saving}</td>
+              <td style="padding: 1rem;">
+                <span class={`badge badge-${p.entrega}`} style="padding: 0.25rem 0.5rem; border-radius: 99px; font-size: 0.85rem; background: var(--hairline);">{p.entrega}</span>
               </td>
-              <td class="view-cell" data-field="retail">
-                ${p.retail}
-              </td>
-              <td class="view-cell savings-cell">
-                <span class="text-green-600 font-medium">${firstMonthSaving(p)}</span>
-              </td>
-              
-              <!-- Edit cells (hidden by default) -->
-              <td class="edit-cell hidden">
-                <div class="flex items-center gap-1">
-                  <span class="text-slate-muted">$</span>
-                  <input type="number" class="w-20 px-2 py-1 text-sm border border-hairline rounded focus:border-flame-500 outline-none edit-biweekly" value={p.biweekly} data-original={p.biweekly} />
-                </div>
-              </td>
-              <td class="edit-cell hidden">
-                <div class="flex items-center gap-1">
-                  <span class="text-slate-muted">$</span>
-                  <input type="number" class="w-24 px-2 py-1 text-sm border border-hairline rounded focus:border-flame-500 outline-none edit-retail" value={p.retail} data-original={p.retail} />
-                </div>
-              </td>
-              <td class="edit-cell hidden">
-                <span class="text-sm text-slate-muted">Auto</span>
-              </td>
-
-              <!-- Other columns -->
-              <td>
-                <span class={`badge ${p.entrega === 'inmediata' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                  {p.entrega === 'inmediata' ? 'Inmediata' : 'Bajo pedido'}
-                </span>
-              </td>
-              <td>
-                {p.badge ? (
-                  <span class="badge bg-purple-100 text-purple-700">{p.badge}</span>
-                ) : (
-                  <span class="text-slate-muted text-xs">-</span>
-                )}
-              </td>
-              <td class="text-right">
-                <div class="view-actions">
-                  <button type="button" class="text-flame-500 hover:text-flame-600 text-sm font-medium btn-edit transition-colors">Editar</button>
-                </div>
-                <div class="edit-actions hidden flex items-center justify-end gap-2">
-                  <button type="button" class="text-slate-500 hover:text-slate-700 text-xs font-medium btn-cancel transition-colors">Cancelar</button>
-                  <button type="button" class="bg-flame-500 hover:bg-flame-600 text-white px-3 py-1 rounded-md text-xs font-medium btn-save transition-colors" data-slug={p.slug}>Guardar</button>
-                </div>
+              <td style="padding: 1rem;">{p.badge || '-'}</td>
+              <td style="padding: 1rem; text-align: right;">
+                <button class="admin-btn admin-btn-sm admin-btn-outline edit-product-btn">Editar</button>
               </td>
             </tr>
-          ))}
-          <tr id="no-results" class="hidden">
-            <td colspan="7" class="text-center py-8 text-slate-muted text-sm">No se encontraron productos que coincidan con los filtros.</td>
-          </tr>
-        </tbody>
-      </table>
+          );
+        })}
+      </tbody>
+    </table>
+    <div id="no-results" style="display: none; padding: 2rem; text-align: center; color: var(--slate-muted);">No se encontraron productos.</div>
+  </div>
+
+  <!-- Modal Overlay -->
+  <div class="admin-modal-overlay" id="product-modal-overlay">
+    <div class="admin-modal">
+      <div class="admin-modal-header">
+        <h2 id="modal-title" style="margin: 0;">Editar Producto</h2>
+        <button class="modal-close-btn" id="modal-close-btn">&times;</button>
+      </div>
+      <div class="admin-modal-body">
+        <div class="modal-two-col">
+          <!-- Left Column: Image -->
+          <div>
+            <div class="admin-form-group" style="margin-bottom: 1.5rem;">
+              <label class="admin-form-label" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Imagen</label>
+              <div class="image-upload-area" id="image-upload-area" style="border: 2px dashed var(--hairline); padding: 1rem; text-align: center; cursor: pointer; border-radius: 8px;">
+                <input type="file" id="image-input" accept="image/*" style="display: none;" />
+                <div class="image-upload-hint" id="image-upload-hint" style="color: var(--slate-muted); margin: 2rem 0;">Haz clic o arrastra una imagen aquí</div>
+                <img id="image-preview" class="modal-image-preview" src="" alt="Preview" style="display: none; max-width: 100%; height: auto; border-radius: 4px;" />
+              </div>
+              <div id="image-upload-loading" style="display: none; font-size: 0.85rem; color: var(--flame-base); margin-top: 0.5rem;">Subiendo imagen...</div>
+            </div>
+            
+            <div class="admin-form-group">
+              <label class="admin-form-label" for="field-slug" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Slug (URL)</label>
+              <input type="text" id="field-slug" class="admin-form-input" style="width: 100%; padding: 0.5rem; border: 1px solid var(--hairline); border-radius: 4px;" />
+              <div style="font-size: 0.75rem; color: var(--slate-muted); margin-top: 0.25rem;">Identificador único.</div>
+            </div>
+          </div>
+          
+          <!-- Right Column: Form -->
+          <div>
+            <div class="admin-form-group" style="margin-bottom: 1rem;">
+              <label class="admin-form-label" for="field-name" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Nombre</label>
+              <input type="text" id="field-name" class="admin-form-input" required style="width: 100%; padding: 0.5rem; border: 1px solid var(--hairline); border-radius: 4px;" />
+            </div>
+            
+            <div class="admin-form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+              <div class="admin-form-group">
+                <label class="admin-form-label" for="field-category" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Categoría</label>
+                <input type="text" id="field-category" list="category-list" class="admin-form-input" style="width: 100%; padding: 0.5rem; border: 1px solid var(--hairline); border-radius: 4px;" />
+                <datalist id="category-list">
+                  {categories.map(cat => <option value={cat} />)}
+                </datalist>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label" for="field-badge" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Badge (Opcional)</label>
+                <input type="text" id="field-badge" class="admin-form-input" placeholder="ej. Nuevo" style="width: 100%; padding: 0.5rem; border: 1px solid var(--hairline); border-radius: 4px;" />
+              </div>
+            </div>
+            
+            <div class="admin-form-group" style="margin-bottom: 1rem;">
+              <label class="admin-form-label" for="field-blurb" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Descripción corta (Blurb)</label>
+              <textarea id="field-blurb" class="admin-form-textarea" rows="2" style="width: 100%; padding: 0.5rem; border: 1px solid var(--hairline); border-radius: 4px;"></textarea>
+            </div>
+            
+            <div class="admin-form-group" style="margin-bottom: 1rem;">
+              <label class="admin-form-label" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Características (Specs)</label>
+              <div class="specs-container" id="specs-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;"></div>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="spec-input" class="admin-form-input" placeholder="Agregar característica..." style="flex: 1; padding: 0.5rem; border: 1px solid var(--hairline); border-radius: 4px;" />
+                <button type="button" id="add-spec-btn" class="admin-btn admin-btn-outline" style="padding: 0.5rem 1rem;">+</button>
+              </div>
+            </div>
+            
+            <div class="admin-form-group" style="margin-bottom: 1rem;">
+              <label class="admin-form-label" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Precio Retail de Referencia ($)</label>
+              <input type="number" id="field-retail" class="admin-form-input" min="0" required style="width: 100%; padding: 0.5rem; border: 1px solid var(--hairline); border-radius: 4px;" />
+            </div>
+
+            <div class="admin-form-group" style="margin-bottom: 1rem;">
+              <label class="admin-form-label" style="display: block; margin-bottom: 0.75rem; font-weight: bold;">Precios por Plan de Cuotas</label>
+              <div style="display: grid; grid-template-columns: auto 1fr 1fr; gap: 0.5rem; align-items: center;">
+                <div style="font-size: 0.7rem; font-weight: 700; color: var(--slate-muted); text-transform: uppercase;"></div>
+                <div style="font-size: 0.7rem; font-weight: 700; color: var(--slate-muted); text-transform: uppercase; text-align: center;">Cuota quincenal</div>
+                <div style="font-size: 0.7rem; font-weight: 700; color: var(--slate-muted); text-transform: uppercase; text-align: center;">Precio final compra</div>
+                
+                <div style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">6 cuotas <span style="color: var(--slate-muted); font-weight: 400;">(3 meses)</span></div>
+                <input type="number" id="field-cuota-6" class="admin-form-input pricing-cuota" data-plan="6" min="0" step="0.5" style="padding: 0.4rem 0.5rem; border: 1px solid var(--hairline); border-radius: 4px; text-align: center;" />
+                <input type="number" id="field-buyout-6" class="admin-form-input pricing-buyout" data-plan="6" min="0" style="padding: 0.4rem 0.5rem; border: 1px solid var(--hairline); border-radius: 4px; text-align: center;" />
+                
+                <div style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">12 cuotas <span style="color: var(--slate-muted); font-weight: 400;">(6 meses)</span></div>
+                <input type="number" id="field-cuota-12" class="admin-form-input pricing-cuota" data-plan="12" min="0" step="0.5" style="padding: 0.4rem 0.5rem; border: 1px solid var(--hairline); border-radius: 4px; text-align: center;" />
+                <input type="number" id="field-buyout-12" class="admin-form-input pricing-buyout" data-plan="12" min="0" style="padding: 0.4rem 0.5rem; border: 1px solid var(--hairline); border-radius: 4px; text-align: center;" />
+                
+                <div style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">18 cuotas <span style="color: var(--slate-muted); font-weight: 400;">(9 meses)</span></div>
+                <input type="number" id="field-cuota-18" class="admin-form-input pricing-cuota" data-plan="18" min="0" step="0.5" style="padding: 0.4rem 0.5rem; border: 1px solid var(--hairline); border-radius: 4px; text-align: center;" />
+                <input type="number" id="field-buyout-18" class="admin-form-input pricing-buyout" data-plan="18" min="0" style="padding: 0.4rem 0.5rem; border: 1px solid var(--hairline); border-radius: 4px; text-align: center;" />
+                
+                <div style="font-size: 0.8rem; font-weight: 600; color: var(--ink);">24 cuotas <span style="color: var(--slate-muted); font-weight: 400;">(12 meses)</span></div>
+                <input type="number" id="field-cuota-24" class="admin-form-input pricing-cuota" data-plan="24" min="0" step="0.5" style="padding: 0.4rem 0.5rem; border: 1px solid var(--hairline); border-radius: 4px; text-align: center;" />
+                <input type="number" id="field-buyout-24" class="admin-form-input pricing-buyout" data-plan="24" min="0" style="padding: 0.4rem 0.5rem; border: 1px solid var(--hairline); border-radius: 4px; text-align: center;" />
+              </div>
+            </div>
+
+            <div class="modal-savings" id="modal-savings-display" style="margin-bottom: 1rem; color: #10b981; font-weight: bold;">
+              Ahorro 1er mes (6 cuotas): $0
+            </div>
+            
+            <div class="admin-form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div class="admin-form-group">
+                <label class="admin-form-label" for="field-entrega" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Disponibilidad</label>
+                <select id="field-entrega" class="admin-form-input" style="width: 100%; padding: 0.5rem; border: 1px solid var(--hairline); border-radius: 4px;">
+                  <option value="inmediata">Inmediata</option>
+                  <option value="pedido">Bajo Pedido</option>
+                </select>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label" for="field-sort-order" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Orden</label>
+                <input type="number" id="field-sort-order" class="admin-form-input" value="0" style="width: 100%; padding: 0.5rem; border: 1px solid var(--hairline); border-radius: 4px;" />
+              </div>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+      <div class="admin-modal-footer">
+        <button class="admin-btn admin-btn-outline" id="modal-cancel-btn">Cancelar</button>
+        <button class="admin-btn admin-btn-primary" id="modal-save-btn">Guardar Cambios</button>
+      </div>
     </div>
   </div>
 
-  <script is:inline>
-    (function() {
-      // Filtering logic
-      const searchInput = document.getElementById('search-input');
-      const categoryFilter = document.getElementById('category-filter');
-      const entregaFilter = document.getElementById('entrega-filter');
-      const productRows = document.querySelectorAll('.product-row');
-      const noResults = document.getElementById('no-results');
-
-      function filterTable() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const cat = categoryFilter.value;
-        const ent = entregaFilter.value;
-        
-        let visibleCount = 0;
-
-        productRows.forEach(row => {
-          const nameMatch = row.dataset.name.includes(searchTerm);
-          const catMatch = cat === 'all' || row.dataset.category === cat;
-          const entMatch = ent === 'all' || row.dataset.entrega === ent;
-
-          if (nameMatch && catMatch && entMatch) {
-            row.style.display = '';
-            visibleCount++;
-          } else {
-            row.style.display = 'none';
-          }
-        });
-
-        if (visibleCount === 0) {
-          noResults.classList.remove('hidden');
-        } else {
-          noResults.classList.add('hidden');
-        }
-      }
-
-      if (searchInput) searchInput.addEventListener('input', filterTable);
-      if (categoryFilter) categoryFilter.addEventListener('change', filterTable);
-      if (entregaFilter) entregaFilter.addEventListener('change', filterTable);
-
-      // Inline edit logic
-      productRows.forEach(row => {
-        const btnEdit = row.querySelector('.btn-edit');
-        const btnCancel = row.querySelector('.btn-cancel');
-        const btnSave = row.querySelector('.btn-save');
-        
-        const viewCells = row.querySelectorAll('.view-cell');
-        const editCells = row.querySelectorAll('.edit-cell');
-        const viewActions = row.querySelector('.view-actions');
-        const editActions = row.querySelector('.edit-actions');
-        
-        const inputBiweekly = row.querySelector('.edit-biweekly');
-        const inputRetail = row.querySelector('.edit-retail');
-
-        const savingsCell = row.querySelector('.savings-cell span');
-        const biweeklyViewCell = row.querySelector('[data-field="biweekly"]');
-        const retailViewCell = row.querySelector('[data-field="retail"]');
-
-        function toggleEdit(editing) {
-          if (editing) {
-            viewCells.forEach(c => c.classList.add('hidden'));
-            editCells.forEach(c => c.classList.remove('hidden'));
-            viewActions.classList.add('hidden');
-            editActions.classList.remove('hidden');
-            editActions.classList.add('flex');
-          } else {
-            viewCells.forEach(c => c.classList.remove('hidden'));
-            editCells.forEach(c => c.classList.add('hidden'));
-            viewActions.classList.remove('hidden');
-            editActions.classList.add('hidden');
-            editActions.classList.remove('flex');
-          }
-        }
-
-        if (btnEdit) btnEdit.addEventListener('click', () => toggleEdit(true));
-        
-        if (btnCancel) {
-          btnCancel.addEventListener('click', () => {
-            inputBiweekly.value = inputBiweekly.dataset.original;
-            inputRetail.value = inputRetail.dataset.original;
-            toggleEdit(false);
-          });
-        }
-
-        if (btnSave) {
-          btnSave.addEventListener('click', async () => {
-            const slug = btnSave.dataset.slug;
-            const newBiweekly = parseInt(inputBiweekly.value, 10) || 0;
-            const newRetail = parseInt(inputRetail.value, 10) || 0;
-
-            btnSave.disabled = true;
-            btnSave.textContent = '...';
-
-            try {
-              const res = await fetch('/api/admin/update-product-price', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug, biweekly: newBiweekly, retail: newRetail })
-              });
-
-              if (!res.ok) throw new Error('Error al guardar');
-
-              inputBiweekly.dataset.original = newBiweekly;
-              inputRetail.dataset.original = newRetail;
-
-              biweeklyViewCell.innerHTML = `<span class="font-semibold text-ink">$${newBiweekly}</span><span class="text-xs text-slate-muted">/quincena</span>`;
-              retailViewCell.textContent = `$${newRetail}`;
-              savingsCell.textContent = `$${newRetail - newBiweekly * 2}`;
-
-              toggleEdit(false);
-            } catch (err) {
-              alert('Hubo un error al actualizar el precio. Verifica tu conexión.');
-            } finally {
-              btnSave.disabled = false;
-              btnSave.textContent = 'Guardar';
-            }
-          });
-        }
-      });
-    })();
-  </script>
+  <div class="admin-toast" id="admin-toast"></div>
 </AdminLayout>
+
+
+
+<script is:inline>
+(function() {
+  // state
+  let isCreatingMode = false;
+  let currentProduct = null;
+  let currentSpecs = [];
+  let uploadedImageUrl = '';
+  let savingInProgress = false;
+
+  // DOM Elements
+  const searchInput = document.getElementById('filter-search');
+  const catFilter = document.getElementById('filter-category');
+  const entregaFilter = document.getElementById('filter-entrega');
+  const btnActivosPrimero = document.getElementById('btn-activos-primero');
+  const tbody = document.getElementById('products-tbody');
+  const noResults = document.getElementById('no-results');
+
+  const addProductBtn = document.getElementById('add-product-btn');
+  const overlay = document.getElementById('product-modal-overlay');
+  const modalCloseBtn = document.getElementById('modal-close-btn');
+  const modalCancelBtn = document.getElementById('modal-cancel-btn');
+  const modalSaveBtn = document.getElementById('modal-save-btn');
+  const modalTitle = document.getElementById('modal-title');
+
+  // Form Fields
+  const fSlug = document.getElementById('field-slug');
+  const fName = document.getElementById('field-name');
+  const fCategory = document.getElementById('field-category');
+  const fBadge = document.getElementById('field-badge');
+  const fBlurb = document.getElementById('field-blurb');
+  const fRetail = document.getElementById('field-retail');
+  const fEntrega = document.getElementById('field-entrega');
+  const fSortOrder = document.getElementById('field-sort-order');
+  const savingsDisplay = document.getElementById('modal-savings-display');
+  
+  // Specs Elements
+  const specsContainer = document.getElementById('specs-container');
+  const specInput = document.getElementById('spec-input');
+  const addSpecBtn = document.getElementById('add-spec-btn');
+
+  // Image Elements
+  const uploadArea = document.getElementById('image-upload-area');
+  const imageInput = document.getElementById('image-input');
+  const imagePreview = document.getElementById('image-preview');
+  const uploadHint = document.getElementById('image-upload-hint');
+  const uploadLoading = document.getElementById('image-upload-loading');
+
+  // Toast
+  const toastEl = document.getElementById('admin-toast');
+
+  // a) Filtering
+  function filterRows() {
+    const term = searchInput.value.toLowerCase();
+    const cat = catFilter.value;
+    const entrega = entregaFilter.value;
+    
+    let visibleCount = 0;
+    const rows = Array.from(tbody.querySelectorAll('.product-row'));
+    
+    rows.forEach(row => {
+      const p = JSON.parse(row.dataset.product);
+      const matchesSearch = p.name.toLowerCase().includes(term);
+      const matchesCat = cat === '' || p.category === cat;
+      const matchesEntrega = entrega === '' || p.entrega === entrega;
+      
+      if (matchesSearch && matchesCat && matchesEntrega) {
+        row.style.display = '';
+        visibleCount++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+  }
+
+  searchInput.addEventListener('input', filterRows);
+  catFilter.addEventListener('change', filterRows);
+  entregaFilter.addEventListener('change', filterRows);
+
+  // b) Modal open/close
+  function openModal(productData, isCreating) {
+    isCreatingMode = isCreating;
+    currentProduct = productData;
+    uploadedImageUrl = productData?.image_url || '';
+    
+    // Set text and read-only states
+    modalTitle.textContent = isCreating ? 'Crear Producto' : 'Editar Producto';
+    modalSaveBtn.textContent = isCreating ? 'Crear Producto' : 'Guardar Cambios';
+    fSlug.readOnly = !isCreating;
+    if (!isCreating) {
+      fSlug.style.backgroundColor = 'var(--hairline)';
+    } else {
+      fSlug.style.backgroundColor = '';
+    }
+
+    // Populate fields
+    fSlug.value = productData?.slug || '';
+    fName.value = productData?.name || '';
+    fCategory.value = productData?.category || '';
+    fBadge.value = productData?.badge || '';
+    fBlurb.value = productData?.blurb || '';
+    
+    // Retail
+    fRetail.value = productData?.retail || '';
+
+    // Pricing grid
+    const plans = ['6', '12', '18', '24'];
+    plans.forEach(plan => {
+      const cuotaInput = document.getElementById('field-cuota-' + plan);
+      const buyoutInput = document.getElementById('field-buyout-' + plan);
+      if (productData?.pricing?.[plan]) {
+        cuotaInput.value = productData.pricing[plan].cuota || '';
+        buyoutInput.value = productData.pricing[plan].buyout || '';
+      } else {
+        cuotaInput.value = '';
+        buyoutInput.value = '';
+      }
+    });
+
+    fEntrega.value = productData?.entrega || 'inmediata';
+    fSortOrder.value = productData?.sort_order || '0';
+    
+    // Specs
+    currentSpecs = productData?.specs ? [...productData.specs] : [];
+    renderSpecs(currentSpecs);
+
+    // Image
+    if (isCreating) {
+        imagePreview.style.display = 'none';
+        uploadHint.style.display = 'block';
+        imagePreview.src = '';
+    } else {
+        const imgSrc = productData.image_url || '/products/' + productData.slug + '.webp';
+        imagePreview.src = imgSrc;
+        imagePreview.style.display = 'block';
+        uploadHint.style.display = 'none';
+    }
+
+    updateSavings();
+    overlay.classList.add('active');
+  }
+
+  function closeModal() {
+    overlay.classList.remove('active');
+    // Reset inputs
+    imageInput.value = '';
+    specInput.value = '';
+  }
+
+  addProductBtn.addEventListener('click', () => {
+    openModal(null, true);
+  });
+
+  document.querySelectorAll('.edit-product-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const row = e.target.closest('.product-row');
+      const p = JSON.parse(row.dataset.product);
+      openModal(p, false);
+    });
+  });
+
+  modalCloseBtn.addEventListener('click', closeModal);
+  modalCancelBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.classList.contains('active')) {
+      closeModal();
+    }
+  });
+
+  // c) Slug auto-generation
+  fName.addEventListener('input', () => {
+    if (isCreatingMode && !fSlug.readOnly) {
+      const val = fName.value;
+      const slug = val
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      fSlug.value = slug;
+    }
+  });
+
+  // d) Specs management
+  function renderSpecs(specsArray) {
+    specsContainer.innerHTML = '';
+    specsArray.forEach((spec, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'spec-chip';
+      chip.style.cssText = 'display: inline-flex; align-items: center; background: var(--hairline); padding: 0.25rem 0.5rem; border-radius: 99px; font-size: 0.85rem;';
+      
+      const span = document.createElement('span');
+      span.textContent = spec;
+      
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'spec-chip-remove';
+      removeBtn.innerHTML = '&times;';
+      removeBtn.style.cssText = 'margin-left: 0.5rem; cursor: pointer; border: none; background: none; font-weight: bold; color: var(--slate-muted);';
+      removeBtn.onclick = () => {
+        currentSpecs.splice(i, 1);
+        renderSpecs(currentSpecs);
+      };
+
+      chip.appendChild(span);
+      chip.appendChild(removeBtn);
+      specsContainer.appendChild(chip);
+    });
+  }
+
+  function addSpec() {
+    const val = specInput.value.trim();
+    if (val) {
+      currentSpecs.push(val);
+      specInput.value = '';
+      renderSpecs(currentSpecs);
+    }
+  }
+
+  addSpecBtn.addEventListener('click', addSpec);
+  specInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addSpec();
+    }
+  });
+
+  // e) Image upload
+  uploadArea.addEventListener('click', () => {
+    if (!fSlug.value && isCreatingMode) {
+      showToast('Por favor, ingresa el Nombre/Slug primero para subir la imagen', 'error');
+      return;
+    }
+    imageInput.click();
+  });
+
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.style.borderColor = 'var(--ink)';
+  });
+
+  uploadArea.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    uploadArea.style.borderColor = '';
+  });
+
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.style.borderColor = '';
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleImageSelection(e.dataTransfer.files[0]);
+    }
+  });
+
+  imageInput.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) {
+      handleImageSelection(e.target.files[0]);
+    }
+  });
+
+  function handleImageSelection(file) {
+    const slug = fSlug.value;
+    if (!slug) {
+      showToast('Falta el slug del producto', 'error');
+      return;
+    }
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imagePreview.src = e.target.result;
+      imagePreview.style.display = 'block';
+      uploadHint.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+
+    // Upload
+    uploadLoading.style.display = 'block';
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('slug', slug);
+
+    fetch('/api/admin/upload-product-image', {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      uploadLoading.style.display = 'none';
+      if (data.image_url) {
+        uploadedImageUrl = data.image_url;
+        showToast('Imagen subida correctamente', 'success');
+      } else if (data.error) {
+        showToast(data.error, 'error');
+      }
+    })
+    .catch(err => {
+      uploadLoading.style.display = 'none';
+      console.error(err);
+      showToast('Error subiendo imagen', 'error');
+    });
+  }
+
+  // f) Price calculation
+  function updateSavings() {
+    const cuota6 = parseFloat(document.getElementById('field-cuota-6').value) || 0;
+    const rt = parseFloat(fRetail.value) || 0;
+    if (cuota6 > 0 && rt > 0) {
+      const saving = rt - (cuota6 * 2);
+      savingsDisplay.textContent = 'Ahorro 1er mes (6 cuotas): $' + (saving > 0 ? saving : 0);
+    } else {
+      savingsDisplay.textContent = 'Ahorro 1er mes (6 cuotas): $0';
+    }
+  }
+
+  document.querySelectorAll('.pricing-cuota, .pricing-buyout').forEach(input => {
+    input.addEventListener('input', updateSavings);
+  });
+  fRetail.addEventListener('input', updateSavings);
+
+  // g) Save/Create
+  modalSaveBtn.addEventListener('click', () => {
+    if (savingInProgress) return;
+    
+    // validate
+    const slug = fSlug.value.trim();
+    const name = fName.value.trim();
+    
+    const pricing = {};
+    ['6', '12', '18', '24'].forEach(plan => {
+      pricing[plan] = {
+        cuota: parseFloat(document.getElementById('field-cuota-' + plan).value) || 0,
+        buyout: parseFloat(document.getElementById('field-buyout-' + plan).value) || 0,
+      };
+    });
+
+    if (!slug || !name || isNaN(parseFloat(fRetail.value))) {
+      showToast('Por favor completa todos los campos requeridos', 'error');
+      return;
+    }
+
+    const payload = {
+      slug,
+      name,
+      category: fCategory.value.trim(),
+      badge: fBadge.value.trim(),
+      blurb: fBlurb.value.trim(),
+      retail: parseFloat(fRetail.value) || 0,
+      pricing,
+      specs: currentSpecs,
+      entrega: fEntrega.value,
+      sort_order: parseInt(fSortOrder.value) || 0,
+      is_new: isCreatingMode
+    };
+
+    if (uploadedImageUrl) {
+        payload.image_url = uploadedImageUrl;
+    }
+
+    savingInProgress = true;
+    modalSaveBtn.textContent = 'Guardando...';
+    modalSaveBtn.disabled = true;
+
+    fetch('/api/admin/update-product-price', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      showToast(isCreatingMode ? 'Producto creado' : 'Producto actualizado', 'success');
+      setTimeout(() => window.location.reload(), 1000);
+    })
+    .catch(err => {
+      console.error(err);
+      showToast(err.message || 'Error guardando producto', 'error');
+      savingInProgress = false;
+      modalSaveBtn.textContent = isCreatingMode ? 'Crear Producto' : 'Guardar Cambios';
+      modalSaveBtn.disabled = false;
+    });
+  });
+
+  // h) Sort order
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const row = e.target.closest('.product-row');
+      const dir = parseInt(e.target.dataset.dir);
+      
+      // Get visible rows
+      const visibleRows = Array.from(tbody.querySelectorAll('.product-row')).filter(r => r.style.display !== 'none');
+      const currentIndex = visibleRows.indexOf(row);
+      const targetIndex = currentIndex + dir;
+
+      if (targetIndex >= 0 && targetIndex < visibleRows.length) {
+        const targetRow = visibleRows[targetIndex];
+        
+        const p1 = JSON.parse(row.dataset.product);
+        const p2 = JSON.parse(targetRow.dataset.product);
+        
+        const order1 = p1.sort_order;
+        const order2 = p2.sort_order;
+        
+        const payload = {
+          items: [
+            { slug: p1.slug, sort_order: order2 },
+            { slug: p2.slug, sort_order: order1 }
+          ]
+        };
+
+        // UI Optimistic Update
+        const num1 = row.querySelector('.sort-order-num');
+        const num2 = targetRow.querySelector('.sort-order-num');
+        num1.textContent = order2;
+        num2.textContent = order1;
+        p1.sort_order = order2;
+        p2.sort_order = order1;
+        row.dataset.product = JSON.stringify(p1);
+        targetRow.dataset.product = JSON.stringify(p2);
+        
+        // DOM swap
+        if (dir === -1) {
+            tbody.insertBefore(row, targetRow);
+        } else {
+            tbody.insertBefore(targetRow, row);
+        }
+
+        fetch('/api/admin/reorder-products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .catch(err => {
+          console.error(err);
+          showToast('Error reordenando', 'error');
+        });
+      }
+    });
+  });
+
+  // i) Activos primero
+  btnActivosPrimero.addEventListener('click', () => {
+    btnActivosPrimero.disabled = true;
+    btnActivosPrimero.textContent = 'Ordenando...';
+
+    const rows = Array.from(tbody.querySelectorAll('.product-row'));
+    const products = rows.map(r => JSON.parse(r.dataset.product));
+
+    // Sort: inmediata first, then keep relative order based on old sort_order
+    products.sort((a, b) => {
+        if (a.entrega === 'inmediata' && b.entrega !== 'inmediata') return -1;
+        if (a.entrega !== 'inmediata' && b.entrega === 'inmediata') return 1;
+        return (a.sort_order || 0) - (b.sort_order || 0);
+    });
+
+    const payload = {
+      items: products.map((p, i) => ({ slug: p.slug, sort_order: i }))
+    };
+
+    fetch('/api/admin/reorder-products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(() => {
+      showToast('Productos ordenados', 'success');
+      setTimeout(() => window.location.reload(), 500);
+    })
+    .catch(err => {
+      console.error(err);
+      showToast('Error reordenando', 'error');
+      btnActivosPrimero.disabled = false;
+      btnActivosPrimero.textContent = 'Activos primero';
+    });
+  });
+
+  // j) Toast
+  function showToast(message, type = 'success') {
+    toastEl.textContent = message;
+    toastEl.className = `admin-toast ${type} show`;
+    setTimeout(() => {
+      toastEl.classList.remove('show');
+    }, 3000);
+  }
+
+})();
+</script>

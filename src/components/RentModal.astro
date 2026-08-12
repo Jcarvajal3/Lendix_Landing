@@ -23,7 +23,7 @@
   <div class="absolute inset-0 bg-ink/40 backdrop-blur-sm transition-opacity" id="rent-modal-backdrop"></div>
   
   <div 
-    class="relative w-full max-w-lg bg-white rounded-4xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 mx-4"
+    class="relative w-full max-w-lg bg-white rounded-4xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 mx-4 flex flex-col max-h-[90vh]"
     id="rent-modal-card"
     role="dialog"
     aria-modal="true"
@@ -38,25 +38,60 @@
       </svg>
     </button>
 
-    <div class="p-8">
+    <div class="p-8 overflow-y-auto">
       <p class="eyebrow mb-2">Plan de renta</p>
       <h3 class="text-2xl font-display font-bold text-ink mb-6" id="rent-modal-title">Obtén tu Producto</h3>
       
       <div class="space-y-4 mb-5">
-        <p class="text-sm font-medium text-ink-soft">Tiempo de renta:</p>
-        <div class="flex items-center justify-between p-4 border border-hairline bg-cream/60 rounded-2xl">
-          <div>
-            <span class="text-sm font-bold text-ink block">Plan 3 meses</span>
-            <span class="text-xs text-slate-muted">Devuelve, renueva o compra al finalizar</span>
-          </div>
-          <span class="text-base font-bold text-flame-600" id="price-6m">$0 cada 2 semanas</span>
+        <p class="text-sm font-medium text-ink-soft">Selecciona tu plan:</p>
+        
+        <div class="grid grid-cols-1 gap-3">
+          <button type="button" class="plan-btn text-left p-4 border border-flame-500 bg-flame-50 rounded-2xl transition-colors" data-plan="6">
+            <div class="flex justify-between items-center mb-1">
+               <span class="text-sm font-bold text-ink">6 cuotas &middot; 3 meses</span>
+            </div>
+            <div class="flex justify-between items-center">
+               <span class="text-base font-bold text-flame-600" id="cuota-6">$0 cada 2 semanas</span>
+               <span class="text-xs text-slate-muted" id="buyout-6">Compra final: $0</span>
+            </div>
+          </button>
+          
+          <button type="button" class="plan-btn text-left p-4 border border-hairline bg-cream/60 rounded-2xl transition-colors hover:border-slate-300" data-plan="12">
+            <div class="flex justify-between items-center mb-1">
+               <span class="text-sm font-bold text-ink">12 cuotas &middot; 6 meses</span>
+            </div>
+            <div class="flex justify-between items-center">
+               <span class="text-base font-bold text-flame-600" id="cuota-12">$0 cada 2 semanas</span>
+               <span class="text-xs text-slate-muted" id="buyout-12">Compra final: $0</span>
+            </div>
+          </button>
+
+          <button type="button" class="plan-btn text-left p-4 border border-hairline bg-cream/60 rounded-2xl transition-colors hover:border-slate-300" data-plan="18">
+            <div class="flex justify-between items-center mb-1">
+               <span class="text-sm font-bold text-ink">18 cuotas &middot; 9 meses</span>
+            </div>
+            <div class="flex justify-between items-center">
+               <span class="text-base font-bold text-flame-600" id="cuota-18">$0 cada 2 semanas</span>
+               <span class="text-xs text-slate-muted" id="buyout-18">Compra final: $0</span>
+            </div>
+          </button>
+
+          <button type="button" class="plan-btn text-left p-4 border border-hairline bg-cream/60 rounded-2xl transition-colors hover:border-slate-300" data-plan="24">
+            <div class="flex justify-between items-center mb-1">
+               <span class="text-sm font-bold text-ink">24 cuotas &middot; 12 meses</span>
+            </div>
+            <div class="flex justify-between items-center">
+               <span class="text-base font-bold text-flame-600" id="cuota-24">$0 cada 2 semanas</span>
+               <span class="text-xs text-slate-muted" id="buyout-24">Compra final: $0</span>
+            </div>
+          </button>
         </div>
       </div>
 
       <!-- Aclaratorias al finalizar alquiler -->
       <div class="mb-6 rounded-2xl border border-hairline bg-cream/40 p-4">
         <p class="text-xs font-semibold tracking-wide text-slate-muted uppercase mb-3">
-          Después de terminar tu alquiler de 3 meses:
+          Después de terminar tu alquiler de <span id="post-rental-months">3</span> meses:
         </p>
         <ul class="space-y-2.5 text-sm font-medium text-ink">
           <li class="flex items-center justify-between gap-2">
@@ -114,30 +149,29 @@
   import { initSessionFromCookies, signInWithGoogle } from '../lib/supabase';
   import { saveRentSelection } from '../lib/rent-selection';
 
-  /** Adonde vuelve el usuario despues de autenticar con Google. */
   const RENT_FLOW_NEXT = '/completar-registro';
 
   let isAuthenticated = false;
 
-  // State
   let currentProduct = {
     slug: '',
     name: '',
-    biweekly: 0
+    pricing: null,
+    retail: 0
   };
-  
-  // Elements
+  let selectedPlan = '6';
+
   const modal = document.getElementById('rent-modal');
   const backdrop = document.getElementById('rent-modal-backdrop');
   const card = document.getElementById('rent-modal-card');
   const closeBtn = document.getElementById('rent-modal-close');
   const title = document.getElementById('rent-modal-title');
-  const price6m = document.getElementById('price-6m');
   const total = document.getElementById('rent-modal-total');
   const submitBtn = document.getElementById('rent-modal-submit');
   const disclaimer = document.getElementById('rent-modal-disclaimer');
-  
-  // Check auth status
+  const postRentalMonths = document.getElementById('post-rental-months');
+  const planBtns = document.querySelectorAll('.plan-btn');
+
   initSessionFromCookies().then(session => {
     if (session) {
       isAuthenticated = true;
@@ -151,30 +185,65 @@
       }
     }
   });
-  
-  // Formatting
-  const formatMoney = (val: number) => `$${val}`;
-  
-  // Update displayed total
-  const updatePrices = () => {
-    if (!total) return;
-    total.innerHTML = `${formatMoney(currentProduct.biweekly)}<span class="text-xl text-ink-soft font-medium"> cada 2 semanas</span>`;
+
+  const formatMoney = (val) => `$${val}`;
+
+  const updatePricesUI = () => {
+    if (!currentProduct.pricing) return;
+    
+    ['6', '12', '18', '24'].forEach(plan => {
+      const p = currentProduct.pricing[plan];
+      if (p) {
+        const cuotaEl = document.getElementById(`cuota-${plan}`);
+        const buyoutEl = document.getElementById(`buyout-${plan}`);
+        if (cuotaEl) cuotaEl.textContent = `${formatMoney(p.cuota)} cada 2 semanas`;
+        if (buyoutEl) buyoutEl.textContent = `Compra final: ${formatMoney(p.buyout)}`;
+      }
+    });
+
+    const selectedPricing = currentProduct.pricing[selectedPlan];
+    if (selectedPricing && total) {
+      total.innerHTML = `${formatMoney(selectedPricing.cuota)}<span class="text-xl text-ink-soft font-medium"> cada 2 semanas</span>`;
+    }
+    
+    const monthsMap = { '6': '3', '12': '6', '18': '9', '24': '12' };
+    if (postRentalMonths) {
+      postRentalMonths.textContent = monthsMap[selectedPlan];
+    }
   };
 
-  // Open modal
-  const openModal = (slug: string, name: string, biweekly: number) => {
-    if (!modal || !card || !title || !price6m) return;
-
-    currentProduct = { slug, name, biweekly };
-
-    // Update texts
-    title.textContent = `Obtén tu ${name}`;
-    price6m.textContent = `${formatMoney(biweekly)} cada 2 semanas`;
-    updatePrices();
+  const selectPlan = (plan) => {
+    selectedPlan = plan;
     
-    // Show with animation
+    planBtns.forEach(btn => {
+      if (btn.getAttribute('data-plan') === plan) {
+        btn.classList.remove('border-hairline', 'bg-cream/60', 'hover:border-slate-300');
+        btn.classList.add('border-flame-500', 'bg-flame-50');
+      } else {
+        btn.classList.add('border-hairline', 'bg-cream/60', 'hover:border-slate-300');
+        btn.classList.remove('border-flame-500', 'bg-flame-50');
+      }
+    });
+    
+    updatePricesUI();
+  };
+
+  planBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectPlan(btn.getAttribute('data-plan'));
+    });
+  });
+
+  const openModal = (slug, name, pricing, retail) => {
+    if (!modal || !card || !title) return;
+
+    currentProduct = { slug, name, pricing, retail };
+    
+    selectPlan('6');
+
+    title.textContent = `Obtén tu ${name}`;
+    
     modal.classList.remove('hidden');
-    // Force reflow
     void modal.offsetWidth;
     modal.classList.remove('opacity-0');
     card.classList.remove('scale-95');
@@ -182,8 +251,7 @@
     
     document.body.style.overflow = 'hidden';
   };
-  
-  // Close modal
+
   const closeModal = () => {
     if (!modal || !card) return;
     
@@ -196,21 +264,25 @@
       document.body.style.overflow = '';
     }, 300);
   };
-  
-  // Event Listeners
-  
-  // Listen for open events globally on data-rent-modal buttons
+
   document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    const btn = target.closest<HTMLElement>('[data-rent-modal]');
+    const target = e.target;
+    const btn = target.closest('[data-rent-modal]');
     
     if (btn) {
       const slug = btn.getAttribute('data-product-slug');
       const name = btn.getAttribute('data-product-name');
-      const biweeklyStr = btn.getAttribute('data-product-biweekly');
+      const pricingStr = btn.getAttribute('data-product-pricing');
+      const retailStr = btn.getAttribute('data-product-retail');
 
-      if (slug && name && biweeklyStr) {
-        openModal(slug, name, parseFloat(biweeklyStr));
+      if (slug && name && pricingStr) {
+        try {
+          const pricing = JSON.parse(pricingStr);
+          const retail = retailStr ? parseFloat(retailStr) : 0;
+          openModal(slug, name, pricing, retail);
+        } catch (err) {
+          console.error("Error parsing product pricing", err);
+        }
       }
     }
   });
@@ -223,20 +295,22 @@
       closeModal();
     }
   });
-  
-  // Handle Google Auth Submit
+
   if (submitBtn) {
     submitBtn.addEventListener('click', async () => {
-      const termMonths = 3;
-      const biweeklyRent = currentProduct.biweekly;
+      if (!currentProduct.pricing) return;
+      
+      const plan = selectedPlan;
+      const selectedPricing = currentProduct.pricing[plan];
+      const cuota = selectedPricing.cuota;
+      const buyout = selectedPricing.buyout;
 
-      // Guardar la seleccion ANTES de salir a Google, para poder mostrarla
-      // en /completar-registro cuando el usuario regrese.
       saveRentSelection({
         product_slug: currentProduct.slug,
         product_name: currentProduct.name,
-        term_months: termMonths,
-        biweekly_rent: biweeklyRent
+        plan: plan,
+        cuota: cuota,
+        buyout: buyout
       });
 
       if (isAuthenticated) {
@@ -244,13 +318,11 @@
         return;
       }
 
-      // Loading state UI
       submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
       const originalHTML = submitBtn.innerHTML;
       submitBtn.innerHTML = '<span class="inline-block w-5 h-5 border-2 border-slate-300 border-t-ink rounded-full animate-spin mr-2"></span><span>Conectando...</span>';
 
       try {
-        // `next` lleva al formulario de alquiler, no de vuelta a la landing.
         await signInWithGoogle(RENT_FLOW_NEXT);
       } catch {
         alert('No se pudo conectar con Google. Por favor, intenta de nuevo.');

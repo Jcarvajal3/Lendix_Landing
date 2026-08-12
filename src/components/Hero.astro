@@ -7,7 +7,7 @@ const products = await getProducts();
 
 // El precio de entrada se calcula del catalogo real: nunca puede mentir.
 const cheapest = products.reduce((a, b) => (b.biweekly < a.biweekly ? b : a));
-const star = products.find((p) => p.slug === 'playstation-5-digital') ?? products[0];
+const star = products.find((p) => p.slug === 'nintendo-switch-oled') ?? products[0];
 
 const garantias = [
   'Delivery gratis a tu hogar',
@@ -45,14 +45,14 @@ const garantias = [
         </span>
 
         <h1 class="mt-3 text-[2.1rem] leading-[1.06] font-bold sm:text-6xl lg:text-[4.15rem]">
-          3 meses de alquiler.
+          Alquila por el tiempo que quieras.
           <br />
-          <span class="text-flame-700">Luego cómpralo</span>
-          o renueva por menos.
+          <span class="text-flame-700">Luego la compra</span>
+          depende de ti.
         </h1>
 
         <p class="mt-3 max-w-xl text-base leading-relaxed text-ink-soft">
-          Alquila tus favoritos. A los 3 meses, cómpralos o renueva más barato.
+          La mejor tecnología para tu hogar: consolas de videojuegos, Smart TVs, laptops y electrodomésticos con cuotas de alquiler a tu alcance.
         </p>
 
         <!-- CTA principal: el usuario elige producto y lo renta -->
@@ -151,8 +151,8 @@ const garantias = [
                 </p>
               </div>
               <div class="text-right">
-                <p class="text-sm text-slate-muted">Otras tiendas</p>
-                <p class="font-display text-lg font-semibold text-slate-muted line-through">${star.retail}</p>
+                <p class="text-sm text-slate-muted">Cuota final de compra</p>
+                <p class="font-display text-lg font-semibold text-slate-muted">${star.retail}</p>
               </div>
             </div>
 

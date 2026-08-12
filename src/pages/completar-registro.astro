@@ -205,8 +205,12 @@ import Nav from '../components/Nav.astro';
     const elPrice = document.getElementById('summary-price');
 
     if (elProduct) elProduct.textContent = rentSelection.product_name || rentSelection.product_slug;
-    if (elPlan) elPlan.textContent = `Plan de ${rentSelection.term_months} meses`;
-    if (elPrice) elPrice.textContent = `$${rentSelection.biweekly_rent}`;
+    if (elPlan) {
+      const planMonths = { '6': '3', '12': '6', '18': '9', '24': '12' };
+      const months = planMonths[rentSelection.plan as keyof typeof planMonths] || rentSelection.plan;
+      elPlan.textContent = `${rentSelection.plan} cuotas (${months} meses)`;
+    }
+    if (elPrice) elPrice.textContent = `$${rentSelection.cuota}`;
 
     mainContent?.classList.remove('hidden');
   }
@@ -320,8 +324,8 @@ import Nav from '../components/Nav.astro';
           user_id: currentUser.id,
           product_slug: rentSelection.product_slug,
           product_name: rentSelection.product_name,
-          term_months: rentSelection.term_months,
-          biweekly_rent: rentSelection.biweekly_rent,
+          term_months: ({ '6': 3, '12': 6, '18': 9, '24': 12 } as Record<string,number>)[rentSelection.plan] || 3,
+          biweekly_rent: rentSelection.cuota,
           cedula_front_path: filePaths['cedula-front'],
           cedula_back_path: filePaths['cedula-back'],
           selfie_path: filePaths['selfie'],

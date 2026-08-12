@@ -7,14 +7,15 @@ const products = await getProducts();
 // Usamos un producto real del catalogo para que los precios de esta seccion
 // nunca se desincronicen de los que muestra la grilla de productos.
 const hero = products.find((p) => p.slug === 'macbook-air-2022') ?? products[0];
-const savedToday = hero.retail - hero.biweekly;
+const heroCuota = hero.pricing['6'].cuota;
+const savedToday = hero.retail - heroCuota;
 
 const rows = [
   {
     icon: 'wallet',
     topic: 'Lo que pagas hoy',
     buy: `$${hero.retail} de una sola vez`,
-    lendix: `$${hero.biweekly} y ya lo tienes en casa`,
+    lendix: `$${heroCuota} y ya lo tienes en casa`,
   },
   {
     icon: 'shield',
@@ -106,7 +107,7 @@ const icons: Record<string, string> = {
           <div class="relative rounded-3xl bg-flame-500 p-5 shadow-lg shadow-flame-500/25">
             <p class="text-[0.8rem] font-semibold tracking-wide text-white/80 uppercase">Con Lendix</p>
             <p class="mt-2 font-display text-3xl font-bold text-white">
-              ${hero.biweekly}<span class="text-base font-semibold text-white/75"> cada 2 semanas</span>
+              ${heroCuota}<span class="text-base font-semibold text-white/75"> cada 2 semanas</span>
             </p>
             <p class="mt-1 text-[0.85rem] text-white/85">y te lo llevas hoy</p>
           </div>
@@ -137,7 +138,7 @@ const icons: Record<string, string> = {
         </div>
         <div class="bg-flame-500 p-5 text-center sm:p-6">
           <p class="font-display text-base font-bold text-white sm:text-lg">Con Lendix</p>
-          <p class="mt-1 text-sm text-white/85">${hero.biweekly} cada 2 semanas</p>
+          <p class="mt-1 text-sm text-white/85">${heroCuota} cada 2 semanas</p>
         </div>
       </div>
 

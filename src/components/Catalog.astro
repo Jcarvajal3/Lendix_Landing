@@ -1,6 +1,7 @@
 ---
 import ProductImage from './ProductImage.astro';
-import { getProducts } from '../data/products';
+import { getProducts, PLAN_KEYS, PLAN_LABELS } from '../data/products';
+import type { PlanKey } from '../data/products';
 
 const rawProducts = await getProducts();
 const products = [...rawProducts].sort((a, b) => {
@@ -9,6 +10,12 @@ const products = [...rawProducts].sort((a, b) => {
   return 0;
 });
 
+const plans = [
+  { key: '6', cuotas: '6 cuotas', meses: '3 meses' },
+  { key: '12', cuotas: '12 cuotas', meses: '6 meses' },
+  { key: '18', cuotas: '18 cuotas', meses: '9 meses' },
+  { key: '24', cuotas: '24 cuotas', meses: '12 meses' }
+];
 ---
 
 <section id="catalogo" class="scroll-mt-24 bg-white py-20 sm:py-28">
@@ -26,11 +33,30 @@ const products = [...rawProducts].sort((a, b) => {
       </p>
     </div>
 
+    <!-- Selector de planes -->
+    <div class="reveal mt-10 flex flex-wrap justify-center gap-2">
+      {
+        plans.map(plan => (
+          <button
+            type="button"
+            data-plan={plan.key}
+            class={`plan-selector-btn px-5 py-2.5 rounded-full text-sm font-semibold border border-hairline transition-all cursor-pointer ${
+              plan.key === '6' 
+                ? 'bg-ink text-white border-ink shadow-lg shadow-ink/15'
+                : 'bg-white text-ink-soft hover:border-flame-300 hover:text-flame-600'
+            }`}
+          >
+            {plan.cuotas} <span class="text-xs font-normal text-slate-muted ml-1">· {plan.meses}</span>
+          </button>
+        ))
+      }
+    </div>
+
     <!-- Grid de productos -->
     <div class="reveal mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {
         products.map((p, i) => (
-          <article class="group flex flex-col overflow-hidden rounded-3xl border border-hairline bg-white transition-all hover:border-flame-200 hover:shadow-2xl hover:shadow-ink/6">
+          <article class="group flex flex-col overflow-hidden rounded-3xl border border-hairline bg-white transition-all hover:border-flame-200 hover:shadow-2xl hover:shadow-ink/6" data-pricing={JSON.stringify(p.pricing)}>
             <div class="relative p-3 pb-0">
               <ProductImage slug={p.slug} name={p.name} class="aspect-4/3" />
               {p.badge && (
@@ -56,12 +82,12 @@ const products = [...rawProducts].sort((a, b) => {
                   <div>
                     <p class="text-[0.8rem] text-slate-muted">Paga</p>
                     <p class="font-display text-3xl font-bold text-ink">
-                      ${p.biweekly}<span class="text-base font-semibold text-slate-muted"> cada 2 semanas</span>
+                      $<span class="product-cuota-price">{p.pricing['6'].cuota}</span><span class="text-base font-semibold text-slate-muted"> cada 2 semanas</span>
                     </p>
                   </div>
                   <div class="text-right">
-                    <p class="text-[0.8rem] text-slate-muted">Otras tiendas</p>
-                    <p class="font-display text-base font-semibold text-slate-muted line-through">${p.retail}</p>
+                    <p class="text-[0.8rem] text-slate-muted">Precio final de compra</p>
+                    <p class="font-display text-base font-semibold text-slate-muted">$<span class="product-buyout-price">{p.pricing['6'].buyout}</span></p>
                   </div>
                 </div>
 
@@ -71,7 +97,8 @@ const products = [...rawProducts].sort((a, b) => {
                     data-rent-modal
                     data-product-slug={p.slug}
                     data-product-name={p.name}
-                    data-product-biweekly={p.biweekly}
+                    data-product-pricing={JSON.stringify(p.pricing)}
+                    data-product-retail={p.retail}
                     class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-flame-500 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-flame-500/25 transition-all hover:bg-flame-600 hover:shadow-xl active:scale-[0.98] cursor-pointer"
                   >
                     Obtenlo ahora
@@ -90,6 +117,8 @@ const products = [...rawProducts].sort((a, b) => {
                     type="button"
                     data-waitlist-modal
                     data-product-name={p.name}
+                    data-product-pricing={JSON.stringify(p.pricing)}
+                    data-product-retail={p.retail}
                     class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-3.5 text-sm font-semibold text-white transition-all hover:bg-flame-500 active:scale-[0.98] cursor-pointer"
                   >
                     Lista de espera
@@ -140,6 +169,51 @@ const products = [...rawProducts].sort((a, b) => {
 
 <script is:inline>
   (function () {
+    // Plan selector
+    const planBtns = document.querySelectorAll('.plan-selector-btn');
+    const articles = document.querySelectorAll('article[data-pricing]');
+    
+    window.__selectedPlan = '6';
+
+    const activeClasses = ['bg-ink', 'text-white', 'border-ink', 'shadow-lg', 'shadow-ink/15'];
+    const inactiveClasses = ['bg-white', 'text-ink-soft', 'hover:border-flame-300', 'hover:text-flame-600'];
+
+    planBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const plan = btn.getAttribute('data-plan');
+        if (!plan) return;
+        
+        window.__selectedPlan = plan;
+
+        // Update active states
+        planBtns.forEach(b => {
+          if (b === btn) {
+            b.classList.remove(...inactiveClasses);
+            b.classList.add(...activeClasses);
+          } else {
+            b.classList.remove(...activeClasses);
+            b.classList.add(...inactiveClasses);
+          }
+        });
+
+        // Update product prices
+        articles.forEach(article => {
+          try {
+            const pricingData = JSON.parse(article.getAttribute('data-pricing') || '{}');
+            const planPricing = pricingData[plan];
+            if (planPricing) {
+              const cuotaEl = article.querySelector('.product-cuota-price');
+              const buyoutEl = article.querySelector('.product-buyout-price');
+              if (cuotaEl) cuotaEl.textContent = planPricing.cuota;
+              if (buyoutEl) buyoutEl.textContent = planPricing.buyout;
+            }
+          } catch (e) {
+            console.error('Error parsing pricing data', e);
+          }
+        });
+      });
+    });
+
     // Preselecciona el producto en el formulario de lista de espera.
     document.querySelectorAll('[data-product-cta]').forEach((cta) => {
       cta.addEventListener('click', () => {
