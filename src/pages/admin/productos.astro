@@ -527,7 +527,60 @@ const categories = [...new Set(allProducts.map(p => p.category))].filter(Boolean
     });
   }
 
-  // f) Price calculation
+  // f) Auto-cálculo de pricing basado en retail
+  // Misma fórmula que products.ts — BIZ constants
+  const BIZ = {
+    cuotasAncla: 28,
+    descuento: { 6: 0, 12: 0.08, 18: 0.14, 24: 0.20 },
+    impago: 0.05,
+    friccion: 0.03,
+    seguroAnual: 50,
+    sueldoEmpleado: 800,
+    cargaLaboral: 0.40,
+    flota: 100,
+    adminMensual: 5,
+    entrega: 15,
+    reacond: 20,
+    recuperacion: 0.50,
+    valorUsado: 0.50,
+    ganancia: { 6: 0.30, 12: 0.50, 18: 0.62, 24: 0.75 },
+    residual: { 6: 0.75, 12: 0.60, 18: 0.52, 24: 0.45 },
+  };
+
+  function calcularPlan(C, Q) {
+    const M = Q / 2;
+    const R = (C / BIZ.cuotasAncla) * (1 - (BIZ.descuento[Q] || 0));
+    const k = (1 - BIZ.impago / 2) * (1 - BIZ.friccion);
+    const fijo = BIZ.seguroAnual / 12
+               + BIZ.sueldoEmpleado * (1 + BIZ.cargaLaboral) / BIZ.flota
+               + BIZ.adminMensual;
+    const perd = BIZ.impago * (1 - BIZ.recuperacion) * (C + C * BIZ.valorUsado) / 2;
+    const neto = R * k * Q - fijo * M - BIZ.entrega - BIZ.reacond - perd;
+    const buyout = Math.max(
+      C * (BIZ.ganancia[Q] || 0.30) + C - neto,
+      C * (BIZ.residual[Q] || 0.50)
+    );
+    return {
+      cuota: Math.round(R * 2) / 2,
+      buyout: Math.round(buyout)
+    };
+  }
+
+  function autoCalculatePricing() {
+    const C = parseFloat(fRetail.value) || 0;
+    if (C <= 0) return;
+
+    [6, 12, 18, 24].forEach(function(Q) {
+      var result = calcularPlan(C, Q);
+      var cuotaInput = document.getElementById('field-cuota-' + Q);
+      var buyoutInput = document.getElementById('field-buyout-' + Q);
+      if (cuotaInput) cuotaInput.value = result.cuota;
+      if (buyoutInput) buyoutInput.value = result.buyout;
+    });
+
+    updateSavings();
+  }
+
   function updateSavings() {
     const cuota6 = parseFloat(document.getElementById('field-cuota-6').value) || 0;
     const rt = parseFloat(fRetail.value) || 0;
@@ -542,7 +595,7 @@ const categories = [...new Set(allProducts.map(p => p.category))].filter(Boolean
   document.querySelectorAll('.pricing-cuota, .pricing-buyout').forEach(input => {
     input.addEventListener('input', updateSavings);
   });
-  fRetail.addEventListener('input', updateSavings);
+  fRetail.addEventListener('input', autoCalculatePricing);
 
   // g) Save/Create
   modalSaveBtn.addEventListener('click', () => {
